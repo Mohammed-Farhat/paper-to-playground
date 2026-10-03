@@ -1,0 +1,588 @@
+{
+ "case": {
+  "source_url": "https://arxiv.org/html/1706.03762v7",
+  "title": "Attention Is All You Need (Vaswani et al., 2017), Section 3.2.1 Scaled Dot-Product Attention",
+  "excerpt": "3.2.1 Scaled Dot-Product Attention. The attention used is called \"Scaled Dot-Product Attention\". The input consists of queries and keys of dimension d_k, and values of dimension d_v. The dot products of the query with all keys are computed, each is divided by sqrt(d_k), and a softmax function is applied to obtain the weights on the values. In practice the attention function is computed on a set of queries simultaneously, packed together into a matrix Q; the keys and values are packed into matrices K and V. The matrix of outputs is computed as: Attention(Q, K, V) = softmax(Q K^T / sqrt(d_k)) V   (Equation 1). The two most commonly used attention functions are additive attention and dot-product (multiplicative) attention. Dot-product attention is identical to this algorithm except for the scaling factor 1/sqrt(d_k). Additive attention computes the compatibility function using a feed-forward network with a single hidden layer. The two are similar in theoretical complexity, but dot-product attention is faster and more space-efficient in practice because it can use optimized matrix multiplication. For small d_k the two mechanisms perform similarly, but additive attention outperforms dot-product attention without scaling for larger d_k. The authors suspect that for large d_k the dot products grow large in magnitude, pushing the softmax into regions where it has extremely small gradients; to counteract this, the dot products are scaled by 1/sqrt(d_k). Footnote 4: to illustrate why the dot products get large, assume the components of q and k are independent random variables with mean 0 and variance 1; then their dot product q . k = sum_{i=1}^{d_k} q_i k_i has mean 0 and variance d_k.",
+  "focus": "Explain scaled dot-product attention (Section 3.2.1, Equation 1) using small, editable Q, K, and V matrices. Show similarity scores, normalized attention weights, and the output. Let the learner edit values and switch scaling on/off. Guide them through equal scores and a dominant score. Check that each row of weights sums to one and that the output equals the weighted sum of V. Do not train a Transformer.",
+  "audience": "Engineering undergraduate who knows matrix multiplication and dot products but has not studied Transformers."
+ },
+ "excerpt": "3.2.1 Scaled Dot-Product Attention. The attention used is called \"Scaled Dot-Product Attention\". The input consists of queries and keys of dimension d_k, and values of dimension d_v. The dot products of the query with all keys are computed, each is divided by sqrt(d_k), and a softmax function is applied to obtain the weights on the values. In practice the attention function is computed on a set of queries simultaneously, packed together into a matrix Q; the keys and values are packed into matrices K and V. The matrix of outputs is computed as: Attention(Q, K, V) = softmax(Q K^T / sqrt(d_k)) V   (Equation 1). The two most commonly used attention functions are additive attention and dot-product (multiplicative) attention. Dot-product attention is identical to this algorithm except for the scaling factor 1/sqrt(d_k). Additive attention computes the compatibility function using a feed-forward network with a single hidden layer. The two are similar in theoretical complexity, but dot-product attention is faster and more space-efficient in practice because it can use optimized matrix multiplication. For small d_k the two mechanisms perform similarly, but additive attention outperforms dot-product attention without scaling for larger d_k. The authors suspect that for large d_k the dot products grow large in magnitude, pushing the softmax into regions where it has extremely small gradients; to counteract this, the dot products are scaled by 1/sqrt(d_k). Footnote 4: to illustrate why the dot products get large, assume the components of q and k are independent random variables with mean 0 and variance 1; then their dot product q . k = sum_{i=1}^{d_k} q_i k_i has mean 0 and variance d_k.",
+ "spec": {
+  "plan": {
+   "concept": "Scaled dot-product attention: scores QK^T/sqrt(d_k), row-wise softmax weights, output = weights · V.",
+   "anchor": "Section 3.2.1, Equation 1: Attention(Q,K,V) = softmax(QK^T/sqrt(d_k))V",
+   "computation": "Build Q (n_q x d_k), K (n_k x d_k), V (n_k x d_v) from editable matrices. Compute S = QK^T, scale by 1/sqrt(d_k) (toggle), row-wise softmax (max-subtracted) to get A, then O = A V. Also report row sums of A and the explicit weighted sum of V rows for the selected query row.",
+   "visual": "Left: heatmap of scaled scores S. Middle: heatmap of attention weights A with row sums. Right: heatmap of output O with the selected query row highlighted. Below: bar chart of weights for the selected query row.",
+   "controls": "n_q, n_k, d_k, d_v (sizes), scale toggle, query-row selector, and editable Q, K, V matrices.",
+   "checks": "Each row of A sums to 1; O equals A·V recomputed independently; softmax weights non-negative; scaling divides scores by sqrt(d_k)."
+  },
+  "title": "Scaled Dot-Product Attention (Equation 1)",
+  "hook": "Edit tiny Q, K and V matrices and watch how dot products become attention weights and then a weighted average of the values.",
+  "idea": "Attention answers a simple question: for each query, which keys look similar, and how much should I copy from their values? Similarity is measured by a dot product $q \\cdot k$. A big dot product means the query and key point in similar directions.\n\nRaw dot products can be large, and a softmax over large numbers becomes nearly one-hot with tiny gradients. Equation 1 therefore divides every score by $\\sqrt{d_k}$ before the softmax. This keeps the scores in a range where the softmax is well behaved.\n\nThe softmax turns each row of scores into a probability distribution over the keys. Those weights are then used to take a weighted average of the value rows. So the output for a query is a blend of the values, with the blend determined by similarity.\n\nEverything here is a toy: small matrices you type in by hand. No training, no learned parameters — just the forward computation of Equation 1.",
+  "why": "Scaled dot-product attention is the core operation inside every Transformer block. Understanding the shape flow and the role of the $1/\\sqrt{d_k}$ factor is the foundation for reading the rest of the architecture.",
+  "equations": [
+   {
+    "tex": "\\mathrm{Attention}(Q,K,V) = \\mathrm{softmax}\\!\\left(\\frac{QK^{\\top}}{\\sqrt{d_k}}\\right)V",
+    "caption": "Equation 1: scores are the dot products of queries with keys, scaled by $1/\\sqrt{d_k}$, softmaxed row-wise, then applied to the values."
+   },
+   {
+    "tex": "\\mathrm{softmax}(z)_i = \\frac{e^{z_i}}{\\sum_j e^{z_j}}",
+    "caption": "Softmax turns a row of scores into non-negative weights that sum to one."
+   },
+   {
+    "tex": "\\mathrm{Var}(q \\cdot k) = d_k",
+    "caption": "Footnote 4: if $q_i, k_i$ are independent with mean 0 and variance 1, the dot product has variance $d_k$ — hence the $1/\\sqrt{d_k}$ scaling."
+   }
+  ],
+  "symbols": [
+   {
+    "symbol": "Q",
+    "meaning": "matrix of queries, shape $n_q \\times d_k$",
+    "demo": "the Q matrix editor"
+   },
+   {
+    "symbol": "K",
+    "meaning": "matrix of keys, shape $n_k \\times d_k$",
+    "demo": "the K matrix editor"
+   },
+   {
+    "symbol": "V",
+    "meaning": "matrix of values, shape $n_k \\times d_v$",
+    "demo": "the V matrix editor"
+   },
+   {
+    "symbol": "d_k",
+    "meaning": "dimension of queries and keys",
+    "demo": "the $d_k$ control"
+   },
+   {
+    "symbol": "d_v",
+    "meaning": "dimension of values",
+    "demo": "the $d_v$ control"
+   },
+   {
+    "symbol": "S",
+    "meaning": "raw scores $QK^{\\top}$",
+    "demo": "shown in the score heatmap when scaling is off"
+   },
+   {
+    "symbol": "A",
+    "meaning": "attention weights $\\mathrm{softmax}(S/\\sqrt{d_k})$",
+    "demo": "the weights heatmap"
+   },
+   {
+    "symbol": "O",
+    "meaning": "output $AV$, shape $n_q \\times d_v$",
+    "demo": "the output heatmap"
+   }
+  ],
+  "controls": [
+   {
+    "id": "nq",
+    "type": "number",
+    "label": "number of queries $n_q$",
+    "min": 1.0,
+    "max": 4.0,
+    "step": 1.0,
+    "value": 2.0
+   },
+   {
+    "id": "nk",
+    "type": "number",
+    "label": "number of keys/values $n_k$",
+    "min": 1.0,
+    "max": 4.0,
+    "step": 1.0,
+    "value": 3.0
+   },
+   {
+    "id": "dk",
+    "type": "number",
+    "label": "key dimension $d_k$",
+    "min": 1.0,
+    "max": 4.0,
+    "step": 1.0,
+    "value": 2.0
+   },
+   {
+    "id": "dv",
+    "type": "number",
+    "label": "value dimension $d_v$",
+    "min": 1.0,
+    "max": 4.0,
+    "step": 1.0,
+    "value": 2.0
+   },
+   {
+    "id": "scale",
+    "type": "toggle",
+    "label": "divide scores by $\\sqrt{d_k}$",
+    "value": true
+   },
+   {
+    "id": "row",
+    "type": "number",
+    "label": "query row to inspect",
+    "min": 0.0,
+    "max": 3.0,
+    "step": 1.0,
+    "value": 0.0
+   },
+   {
+    "id": "Q",
+    "type": "matrix",
+    "label": "queries $Q$",
+    "rows": "nq",
+    "cols": "dk",
+    "min": -3.0,
+    "max": 3.0,
+    "step": 0.5,
+    "value": [
+     [
+      1.0,
+      0.0
+     ],
+     [
+      0.0,
+      1.0
+     ]
+    ],
+    "rowLabels": [
+     "q1",
+     "q2"
+    ],
+    "colLabels": [
+     "d1",
+     "d2"
+    ],
+    "fill": 0
+   },
+   {
+    "id": "K",
+    "type": "matrix",
+    "label": "keys $K$",
+    "rows": "nk",
+    "cols": "dk",
+    "min": -3.0,
+    "max": 3.0,
+    "step": 0.5,
+    "value": [
+     [
+      1.0,
+      0.0
+     ],
+     [
+      0.0,
+      1.0
+     ],
+     [
+      1.0,
+      1.0
+     ]
+    ],
+    "rowLabels": [
+     "k1",
+     "k2",
+     "k3"
+    ],
+    "colLabels": [
+     "d1",
+     "d2"
+    ],
+    "fill": 0
+   },
+   {
+    "id": "V",
+    "type": "matrix",
+    "label": "values $V$",
+    "rows": "nk",
+    "cols": "dv",
+    "min": -3.0,
+    "max": 3.0,
+    "step": 0.5,
+    "value": [
+     [
+      1.0,
+      0.0
+     ],
+     [
+      0.0,
+      1.0
+     ],
+     [
+      1.0,
+      1.0
+     ]
+    ],
+    "rowLabels": [
+     "v1",
+     "v2",
+     "v3"
+    ],
+    "colLabels": [
+     "d1",
+     "d2"
+    ],
+    "fill": 0
+   }
+  ],
+  "visual_caption": "Three heatmaps in a row: scaled scores $S/\\sqrt{d_k}$ (or raw $S$ if scaling is off), attention weights $A$ with row sums printed on the right, and the output $O = AV$. The inspected query row is outlined in each heatmap. Below, a bar chart shows the weights of that row over the keys.",
+  "explorations": [
+   {
+    "title": "Equal scores give uniform weights",
+    "preset": {
+     "nq": 1,
+     "nk": 3,
+     "dk": 2,
+     "dv": 2,
+     "scale": true,
+     "row": 0,
+     "Q": [
+      [
+       1,
+       0
+      ]
+     ],
+     "K": [
+      [
+       1,
+       0
+      ],
+      [
+       1,
+       0
+      ],
+      [
+       1,
+       0
+      ]
+     ],
+     "V": [
+      [
+       1,
+       0
+      ],
+      [
+       0,
+       1
+      ],
+      [
+       1,
+       1
+      ]
+     ]
+    },
+    "change": "Look at the weights heatmap and the bar chart without changing anything first, then try changing one entry of $K$.",
+    "observe": "With all keys identical, every score is the same, so each weight is $1/3$ and the row sum is $1$. The output is the plain average of the three value rows. Change one key entry and the weights shift toward the matching key.",
+    "why": "Softmax of equal scores is uniform: $e^{c}/\\sum_j e^{c} = 1/n_k$. The output is therefore the mean of the value rows."
+   },
+   {
+    "title": "A dominant score and the role of scaling",
+    "preset": {
+     "nq": 1,
+     "nk": 3,
+     "dk": 4,
+     "dv": 2,
+     "scale": true,
+     "row": 0,
+     "Q": [
+      [
+       2,
+       2,
+       2,
+       2
+      ]
+     ],
+     "K": [
+      [
+       2,
+       2,
+       2,
+       2
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ]
+     ],
+     "V": [
+      [
+       1,
+       0
+      ],
+      [
+       0,
+       1
+      ],
+      [
+       1,
+       1
+      ]
+     ]
+    },
+    "change": "Turn the scaling toggle off and on, and watch the weights heatmap and the bar chart.",
+    "observe": "With scaling on, the first weight is large but not exactly $1$. With scaling off, the raw score $16$ dominates and the first weight becomes essentially $1$, so the output collapses onto the first value row.",
+    "why": "Dividing by $\\sqrt{d_k}$ shrinks large dot products. Without it, the softmax saturates toward a one-hot distribution, which is exactly the small-gradient regime the paper warns about for large $d_k$."
+   }
+  ],
+  "pitfall": {
+   "kind": "misconception",
+   "title": "Softmax is over keys, not over queries",
+   "text": "The softmax in Equation 1 is applied row-wise to $QK^{\\top}$, so each query gets its own distribution over the keys. Rows of $A$ sum to one; columns generally do not. Also note that scaling changes the sharpness of the weights but never changes their shape (number of rows and columns)."
+  },
+  "grounding": {
+   "paper": "Attention Is All You Need (Vaswani et al., 2017)",
+   "section": "Section 3.2.1, Equation 1",
+   "from_source": [
+    "The input consists of queries and keys of dimension $d_k$, and values of dimension $d_v$.",
+    "The dot products of the query with all keys are computed, each divided by $\\sqrt{d_k}$, and a softmax is applied to obtain the weights on the values.",
+    "The attention function is computed on a set of queries packed into a matrix $Q$, with keys and values packed into $K$ and $V$.",
+    "The output is $\\mathrm{softmax}(QK^{\\top}/\\sqrt{d_k})V$ (Equation 1).",
+    "Dot-product attention is identical to this algorithm except for the scaling factor $1/\\sqrt{d_k}$.",
+    "For large $d_k$ the dot products grow large in magnitude, pushing the softmax into regions with extremely small gradients; scaling counteracts this.",
+    "Footnote 4: if components of $q$ and $k$ are independent with mean 0 and variance 1, then $q \\cdot k$ has mean 0 and variance $d_k$."
+   ],
+   "our_additions": [
+    "The specific toy matrices and their entries.",
+    "The choice to display scores, weights and output as heatmaps with a bar chart for one query row.",
+    "The two guided explorations (uniform keys, dominant key with scaling on/off).",
+    "The live checks on row sums and on $O = AV$."
+   ],
+   "disclaimer": "This page is a hand-editable toy of the forward computation in Equation 1. It does not train a Transformer and does not reproduce any experiment from the paper."
+  },
+  "tests": [
+   {
+    "name": "uniform keys give uniform weights",
+    "state": {
+     "nq": 1,
+     "nk": 3,
+     "dk": 2,
+     "dv": 2,
+     "scale": true,
+     "row": 0,
+     "Q": [
+      [
+       1,
+       0
+      ]
+     ],
+     "K": [
+      [
+       1,
+       0
+      ],
+      [
+       1,
+       0
+      ],
+      [
+       1,
+       0
+      ]
+     ],
+     "V": [
+      [
+       1,
+       0
+      ],
+      [
+       0,
+       1
+      ],
+      [
+       1,
+       1
+      ]
+     ]
+    },
+    "expect": [
+     {
+      "path": "A.0.0",
+      "value": 0.3333333333333333,
+      "tol": 1e-09
+     },
+     {
+      "path": "A.0.1",
+      "value": 0.3333333333333333,
+      "tol": 1e-09
+     },
+     {
+      "path": "A.0.2",
+      "value": 0.3333333333333333,
+      "tol": 1e-09
+     },
+     {
+      "path": "rowSums.0",
+      "value": 1,
+      "tol": 1e-09
+     }
+    ]
+   },
+   {
+    "name": "output is the weighted sum of values",
+    "state": {
+     "nq": 1,
+     "nk": 3,
+     "dk": 2,
+     "dv": 2,
+     "scale": true,
+     "row": 0,
+     "Q": [
+      [
+       1,
+       0
+      ]
+     ],
+     "K": [
+      [
+       1,
+       0
+      ],
+      [
+       1,
+       0
+      ],
+      [
+       1,
+       0
+      ]
+     ],
+     "V": [
+      [
+       1,
+       0
+      ],
+      [
+       0,
+       1
+      ],
+      [
+       1,
+       1
+      ]
+     ]
+    },
+    "expect": [
+     {
+      "path": "O.0.0",
+      "value": 0.6666666666666666,
+      "tol": 1e-09
+     },
+     {
+      "path": "O.0.1",
+      "value": 0.6666666666666666,
+      "tol": 1e-09
+     }
+    ]
+   },
+   {
+    "name": "scaling divides scores by sqrt(d_k)",
+    "state": {
+     "nq": 1,
+     "nk": 1,
+     "dk": 4,
+     "dv": 1,
+     "scale": true,
+     "row": 0,
+     "Q": [
+      [
+       2,
+       2,
+       2,
+       2
+      ]
+     ],
+     "K": [
+      [
+       2,
+       2,
+       2,
+       2
+      ]
+     ],
+     "V": [
+      [
+       1
+      ]
+     ]
+    },
+    "expect": [
+     {
+      "path": "S.0.0",
+      "value": 16,
+      "tol": 1e-09
+     },
+     {
+      "path": "Sscaled.0.0",
+      "value": 8,
+      "tol": 1e-09
+     }
+    ]
+   },
+   {
+    "name": "single key gives weight one",
+    "state": {
+     "nq": 2,
+     "nk": 1,
+     "dk": 2,
+     "dv": 2,
+     "scale": false,
+     "row": 0,
+     "Q": [
+      [
+       1,
+       0
+      ],
+      [
+       0,
+       1
+      ]
+     ],
+     "K": [
+      [
+       1,
+       1
+      ]
+     ],
+     "V": [
+      [
+       3,
+       -1
+      ]
+     ]
+    },
+    "expect": [
+     {
+      "path": "A.0.0",
+      "value": 1,
+      "tol": 1e-09
+     },
+     {
+      "path": "A.1.0",
+      "value": 1,
+      "tol": 1e-09
+     },
+     {
+      "path": "O.0.0",
+      "value": 3,
+      "tol": 1e-09
+     },
+     {
+      "path": "O.1.1",
+      "value": -1,
+      "tol": 1e-09
+     }
+    ]
+   }
+  ]
+ },
+ "code": "function compute(s) {\n  const nq = Math.max(1, Math.round(s.nq));\n  const nk = Math.max(1, Math.round(s.nk));\n  const dk = Math.max(1, Math.round(s.dk));\n  const dv = Math.max(1, Math.round(s.dv));\n  const scale = !!s.scale;\n\n  // Build Q, K, V with safe dimensions\n  const Q = [], K = [], V = [];\n  for (let i = 0; i < nq; i++) {\n    const row = [];\n    for (let j = 0; j < dk; j++) {\n      const v = (s.Q && s.Q[i] && s.Q[i][j] !== undefined) ? Number(s.Q[i][j]) : 0;\n      row.push(Number.isFinite(v) ? v : 0);\n    }\n    Q.push(row);\n  }\n  for (let i = 0; i < nk; i++) {\n    const row = [];\n    for (let j = 0; j < dk; j++) {\n      const v = (s.K && s.K[i] && s.K[i][j] !== undefined) ? Number(s.K[i][j]) : 0;\n      row.push(Number.isFinite(v) ? v : 0);\n    }\n    K.push(row);\n  }\n  for (let i = 0; i < nk; i++) {\n    const row = [];\n    for (let j = 0; j < dv; j++) {\n      const v = (s.V && s.V[i] && s.V[i][j] !== undefined) ? Number(s.V[i][j]) : 0;\n      row.push(Number.isFinite(v) ? v : 0);\n    }\n    V.push(row);\n  }\n\n  // S = Q K^T\n  const S = [];\n  for (let i = 0; i < nq; i++) {\n    const row = [];\n    for (let j = 0; j < nk; j++) {\n      let acc = 0;\n      for (let t = 0; t < dk; t++) acc += Q[i][t] * K[j][t];\n      row.push(acc);\n    }\n    S.push(row);\n  }\n\n  const denom = Math.sqrt(dk);\n  const Sscaled = S.map(row => row.map(x => x / denom));\n\n  // softmax row-wise on Sscaled (or S if scale off)\n  const src = scale ? Sscaled : S;\n  const A = [];\n  for (let i = 0; i < nq; i++) {\n    const row = src[i];\n    let m = -Infinity;\n    for (let j = 0; j < nk; j++) if (row[j] > m) m = row[j];\n    if (!Number.isFinite(m)) m = 0;\n    const ex = row.map(x => Math.exp(x - m));\n    let sum = 0;\n    for (let j = 0; j < nk; j++) sum += ex[j];\n    if (!(sum > 0) || !Number.isFinite(sum)) {\n      A.push(row.map(() => 1 / nk));\n    } else {\n      A.push(ex.map(x => x / sum));\n    }\n  }\n\n  // O = A V\n  const O = [];\n  for (let i = 0; i < nq; i++) {\n    const row = [];\n    for (let j = 0; j < dv; j++) {\n      let acc = 0;\n      for (let t = 0; t < nk; t++) acc += A[i][t] * V[t][j];\n      row.push(acc);\n    }\n    O.push(row);\n  }\n\n  const rowSums = A.map(row => row.reduce((a, b) => a + b, 0));\n\n  // selected row\n  let row = Math.round(s.row);\n  if (!Number.isFinite(row)) row = 0;\n  row = Math.max(0, Math.min(nq - 1, row));\n\n  // explicit weighted sum for selected row\n  const weighted = [];\n  for (let j = 0; j < dv; j++) {\n    let acc = 0;\n    for (let t = 0; t < nk; t++) acc += A[row][t] * V[t][j];\n    weighted.push(acc);\n  }\n\n  return {\n    nq, nk, dk, dv,\n    scale: scale ? 1 : 0,\n    Q, K, V,\n    S, Sscaled, A, O,\n    rowSums,\n    row,\n    weightsRow: A[row],\n    weightedRow: weighted,\n    outputRow: O[row],\n    sqrtDk: denom\n  };\n}\n\nfunction render(s, r) {\n  const W = 760, H = 560;\n  const parts = [];\n  const pad = 16;\n\n  // Layout: three heatmaps in a row\n  const hmW = 200, hmH = 170;\n  const y0 = 60;\n  const x1 = pad + 10;\n  const x2 = x1 + hmW + 60;\n  const x3 = x2 + hmW + 60;\n\n  const nq = r.nq, nk = r.nk, dv = r.dv;\n\n  const rowLabelsQ = [];\n  for (let i = 0; i < nq; i++) rowLabelsQ.push('q' + (i + 1));\n  const colLabelsK = [];\n  for (let j = 0; j < nk; j++) colLabelsK.push('k' + (j + 1));\n  const colLabelsV = [];\n  for (let j = 0; j < dv; j++) colLabelsV.push('d' + (j + 1));\n\n  // Title\n  parts.push(L.text(W / 2, 24, 'Scaled Dot-Product Attention', { size: 18, anchor: 'middle', weight: 'bold' }));\n  parts.push(L.text(W / 2, 44, r.scale ? 'scores divided by sqrt(d_k) = ' + L.fmt(r.sqrtDk, 3) : 'scaling OFF (raw dot products)', { size: 13, anchor: 'middle', color: '#555' }));\n\n  // Heatmap 1: scores\n  const scoreMatrix = r.scale ? r.Sscaled : r.S;\n  const scoreTitle = r.scale ? 'Scores  S / sqrt(d_k)' : 'Scores  S = Q K^T';\n  parts.push(L.heatmap({\n    x: x1, y: y0, w: hmW, h: hmH,\n    matrix: scoreMatrix,\n    rowLabels: rowLabelsQ,\n    colLabels: colLabelsK,\n    title: scoreTitle,\n    fmt: (v) => L.fmt(v, 2),\n    highlight: [[r.row, 0]]\n  }));\n\n  // Heatmap 2: weights\n  parts.push(L.heatmap({\n    x: x2, y: y0, w: hmW, h: hmH,\n    matrix: r.A,\n    rowLabels: rowLabelsQ,\n    colLabels: colLabelsK,\n    title: 'Weights  A = softmax(...)',\n    min: 0, max: 1,\n    fmt: (v) => L.fmt(v, 2),\n    highlight: [[r.row, 0]]\n  }));\n\n  // Heatmap 3: output\n  parts.push(L.heatmap({\n    x: x3, y: y0, w: hmW, h: hmH,\n    matrix: r.O,\n    rowLabels: rowLabelsQ,\n    colLabels: colLabelsV,\n    title: 'Output  O = A V',\n    fmt: (v) => L.fmt(v, 2),\n    highlight: [[r.row, 0]]\n  }));\n\n  // Row sums annotation\n  const rsY = y0 + hmH + 22;\n  parts.push(L.text(x2, rsY, 'row sums of A:', { size: 12, anchor: 'start', color: '#333' }));\n  for (let i = 0; i < nq; i++) {\n    parts.push(L.text(x2 + 90 + i * 55, rsY, L.fmt(r.rowSums[i], 3), { size: 12, anchor: 'start', color: '#333' }));\n  }\n\n  // Bar chart of selected row weights\n  const barY = rsY + 30;\n  parts.push(L.bars({\n    x: pad + 10, y: barY, w: 340, h: 150,\n    values: r.weightsRow,\n    labels: colLabelsK,\n    title: 'Weights for query row ' + (r.row + 1),\n    yLabel: 'weight',\n    min: 0, max: 1,\n    fmt: (v) => L.fmt(v, 3)\n  }));\n\n  // Weighted sum text\n  const tx = pad + 380;\n  parts.push(L.text(tx, barY + 10, 'Weighted sum of V rows for query ' + (r.row + 1) + ':', { size: 13, anchor: 'start', weight: 'bold' }));\n  for (let j = 0; j < dv; j++) {\n    parts.push(L.text(tx, barY + 34 + j * 20, 'dim ' + (j + 1) + ': ' + L.fmt(r.weightedRow[j], 3), { size: 12, anchor: 'start' }));\n  }\n  parts.push(L.text(tx, barY + 34 + dv * 20 + 10, 'Output row ' + (r.row + 1) + ':', { size: 13, anchor: 'start', weight: 'bold' }));\n  for (let j = 0; j < dv; j++) {\n    parts.push(L.text(tx, barY + 34 + dv * 20 + 34 + j * 20, 'dim ' + (j + 1) + ': ' + L.fmt(r.outputRow[j], 3), { size: 12, anchor: 'start' }));\n  }\n\n  return L.svg(W, H, parts.join(''));\n}\n\nfunction show(s, r) {\n  const out = [];\n  out.push({ label: 'n_q', value: r.nq, digits: 0, note: 'number of queries' });\n  out.push({ label: 'n_k', value: r.nk, digits: 0, note: 'number of keys/values' });\n  out.push({ label: 'd_k', value: r.dk, digits: 0, note: 'key dimension' });\n  out.push({ label: 'd_v', value: r.dv, digits: 0, note: 'value dimension' });\n  out.push({ label: 'sqrt(d_k)', value: r.sqrtDk, digits: 3, note: 'scaling denominator' });\n  out.push({ label: 'scaling', value: r.scale ? 'on' : 'off', digits: 0, note: 'divide scores by sqrt(d_k)' });\n  out.push({ label: 'S = Q K^T', value: r.S, digits: 3, note: 'raw scores', rowLabels: r.Q.map((_, i) => 'q' + (i + 1)), colLabels: r.K.map((_, j) => 'k' + (j + 1)) });\n  out.push({ label: 'S / sqrt(d_k)', value: r.Sscaled, digits: 3, note: 'scaled scores', rowLabels: r.Q.map((_, i) => 'q' + (i + 1)), colLabels: r.K.map((_, j) => 'k' + (j + 1)) });\n  out.push({ label: 'A = softmax(...)', value: r.A, digits: 3, note: 'attention weights', rowLabels: r.Q.map((_, i) => 'q' + (i + 1)), colLabels: r.K.map((_, j) => 'k' + (j + 1)) });\n  out.push({ label: 'row sums of A', value: r.rowSums, digits: 3, note: 'each should be 1', colLabels: r.Q.map((_, i) => 'q' + (i + 1)) });\n  out.push({ label: 'O = A V', value: r.O, digits: 3, note: 'output', rowLabels: r.Q.map((_, i) => 'q' + (i + 1)), colLabels: r.V[0].map((_, j) => 'd' + (j + 1)) });\n  out.push({ label: 'weights row ' + (r.row + 1), value: r.weightsRow, digits: 3, note: 'selected query weights', colLabels: r.K.map((_, j) => 'k' + (j + 1)) });\n  out.push({ label: 'weighted V row ' + (r.row + 1), value: r.weightedRow, digits: 3, note: 'sum_j A[row][j] V[j]', colLabels: r.V[0].map((_, j) => 'd' + (j + 1)) });\n  return out;\n}\n\nfunction checks(s, r) {\n  const out = [];\n\n  // 1. Row sums of A equal 1\n  let maxDev = 0;\n  for (let i = 0; i < r.nq; i++) {\n    maxDev = Math.max(maxDev, Math.abs(r.rowSums[i] - 1));\n  }\n  out.push({\n    name: 'each row of A sums to 1',\n    pass: maxDev < 1e-9,\n    detail: 'max |rowSum - 1| = ' + L.fmt(maxDev, 3)\n  });\n\n  // 2. Weights non-negative\n  let minW = Infinity;\n  for (let i = 0; i < r.nq; i++) {\n    for (let j = 0; j < r.nk; j++) minW = Math.min(minW, r.A[i][j]);\n  }\n  out.push({\n    name: 'all attention weights >= 0',\n    pass: minW >= -1e-12,\n    detail: 'min weight = ' + L.fmt(minW, 3)\n  });\n\n  // 3. O equals A V recomputed\n  let maxO = 0;\n  for (let i = 0; i < r.nq; i++) {\n    for (let j = 0; j < r.dv; j++) {\n      let acc = 0;\n      for (let t = 0; t < r.nk; t++) acc += r.A[i][t] * r.V[t][j];\n      maxO = Math.max(maxO, Math.abs(acc - r.O[i][j]));\n    }\n  }\n  out.push({\n    name: 'O equals A V',\n    pass: maxO < 1e-9,\n    detail: 'max |O - A V| = ' + L.fmt(maxO, 3)\n  });\n\n  // 4. Scaling divides scores by sqrt(d_k)\n  let maxS = 0;\n  for (let i = 0; i < r.nq; i++) {\n    for (let j = 0; j < r.nk; j++) {\n      maxS = Math.max(maxS, Math.abs(r.Sscaled[i][j] - r.S[i][j] / r.sqrtDk));\n    }\n  }\n  out.push({\n    name: 'Sscaled = S / sqrt(d_k)',\n    pass: maxS < 1e-9,\n    detail: 'max deviation = ' + L.fmt(maxS, 3)\n  });\n\n  // 5. Selected row weighted sum matches output row\n  let maxW = 0;\n  for (let j = 0; j < r.dv; j++) {\n    maxW = Math.max(maxW, Math.abs(r.weightedRow[j] - r.outputRow[j]));\n  }\n  out.push({\n    name: 'selected row: weighted V equals output row',\n    pass: maxW < 1e-9,\n    detail: 'max deviation = ' + L.fmt(maxW, 3)\n  });\n\n  return out;\n}"
+}

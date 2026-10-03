@@ -1,0 +1,143 @@
+"""Assemble the self-contained out/index.html from the template, spec and code.
+
+All model-written text is HTML-escaped (then $TeX$ is converted to MathML), so
+the model cannot inject markup. Scripts are inlined; nothing is loaded from
+the network.
+"""
+
+from __future__ import annotations
+
+import html
+import json
+import re
+from pathlib import Path
+from typing import Any
+
+from .texmath import rich_inline, rich_text, tex_to_mathml
+
+TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "templates"
+
+
+def _read(name: str) -> str:
+    return (TEMPLATE_DIR / name).read_text(encoding="utf-8")
+
+
+def _script_safe(js: str) -> str:
+    """Prevent an inline script from closing its own <script> element."""
+    return re.sub(r"</(script)", r"<\\/\1", js, flags=re.I).replace("<!--", "<\\!--")
+
+
+def _esc(s: Any) -> str:
+    return html.escape(str(s or ""), quote=True)
+
+
+def _safe_url(url: str) -> str | None:
+    url = (url or "").strip()
+    return url if re.match(r"^https?://[^\s\"'<>]+$", url) else None
+
+
+def render_equations(eqs: list[dict]) -> str:
+    if not eqs:
+        return ""
+    parts = ['<div class="equations">']
+    for e in eqs:
+        parts.append('<div class="equation">' + tex_to_mathml(str(e.get("tex", "")), display=True))
+        if e.get("caption"):
+            parts.append(f'<p class="caption">{rich_inline(e["caption"])}</p>')
+        parts.append("</div>")
+    parts.append("</div>")
+    return "".join(parts)
+
+
+def render_symbols(symbols: list[dict]) -> str:
+    rows = []
+    for s in symbols:
+        rows.append(
+            "<tr><td class=\"sym\">" + tex_to_mathml(str(s.get("symbol", ""))) + "</td>"
+            f"<td>{rich_inline(s.get('meaning', ''))}</td>"
+            f"<td>{rich_inline(s.get('demo', ''))}</td></tr>"
+        )
+    return ('<table class="symbols"><thead><tr><th>Symbol</th><th>Meaning</th><th>In the playground</th></tr></thead>'
+            "<tbody>" + "".join(rows) + "</tbody></table>")
+
+
+def render_explorations(exps: list[dict]) -> str:
+    out = []
+    for i, e in enumerate(exps):
+        button = (f'<button type="button" class="p2p-try" data-p2p-preset="{i}">Set up this exploration</button>'
+                  if e.get("preset") else "")
+        out.append(
+            f'<article class="p2p-exploration"><h3>Exploration {i + 1}: {rich_inline(e.get("title", ""))}</h3>'
+            f"<dl><dt>Change</dt><dd>{rich_inline(e.get('change', ''))}</dd>"
+            f"<dt>Observe</dt><dd>{rich_inline(e.get('observe', ''))}</dd>"
+            f"<dt>Why</dt><dd>{rich_inline(e.get('why', ''))}</dd></dl>{button}</article>"
+        )
+    return "".join(out)
+
+
+def render_grounding(g: dict, case: dict, excerpt: str) -> str:
+    paper = g.get("paper") or case.get("title") or "Source paper"
+    url = _safe_url(case.get("source_url", ""))
+    link = f' &mdash; <a href="{_esc(url)}">{_esc(url)}</a>' if url else ""
+    parts = [f"<p><strong>Paper:</strong> {rich_inline(paper)}{link}</p>"]
+    if g.get("section"):
+        parts.append(f"<p><strong>Relevant part:</strong> {rich_inline(g['section'])}</p>")
+    src = "".join(f"<li>{rich_inline(x)}</li>" for x in g.get("from_source", []))
+    ours = "".join(f"<li>{rich_inline(x)}</li>" for x in g.get("our_additions", []))
+    parts.append('<div class="ground-grid">'
+                 f'<div class="from-source"><h3>Supported by the source excerpt</h3><ul>{src}</ul></div>'
+                 f'<div class="ours"><h3>Our examples and simplifications (not from the paper)</h3><ul>{ours}</ul></div>'
+                 "</div>")
+    disclaimer = g.get("disclaimer") or ("The playground is a small toy illustration of the mechanism. "
+                                         "It does not reproduce the paper's experiments or results.")
+    parts.append(f'<p class="disclaimer">{rich_inline(disclaimer)}</p>')
+    if excerpt:
+        parts.append('<details class="excerpt"><summary>Source excerpt given to the generator</summary>'
+                     f"<blockquote>{_esc(excerpt)}</blockquote></details>")
+    return "".join(parts)
+
+
+def runtime_spec(spec: dict) -> dict:
+    """The subset of the spec the browser runtime needs (controls + presets)."""
+    controls = []
+    for c in spec.get("controls", []):
+        c = dict(c)
+        c["labelHtml"] = rich_inline(c.get("label", c["id"]))
+        if c.get("help"):
+            c["helpHtml"] = rich_inline(c["help"])
+        controls.append(c)
+    exps = [{"preset": e.get("preset")} for e in spec.get("explorations", [])]
+    return {"controls": controls, "explorations": exps}
+
+
+def build_page(spec: dict, code: str, case: dict, excerpt: str) -> str:
+    page = _read("page.html")
+    pitfall = spec.get("pitfall", {})
+    kind = str(pitfall.get("kind") or "Limitation").split("|")[0].strip().capitalize()
+    heading = kind + (f": {pitfall['title']}" if pitfall.get("title") else "")
+    audience = case.get("audience", "").strip()
+    meta = f"Written for: {_esc(audience)}" if audience else ""
+    footer = ("Generated by paper-to-playground. All numbers on this page are computed live in your browser "
+              "from the controls; nothing is loaded from the internet.")
+    spec_json = json.dumps(runtime_spec(spec), ensure_ascii=False).replace("</", "<\\/")
+    values = {
+        "TITLE": _esc(spec.get("title") or case.get("title") or "Interactive explanation"),
+        "HOOK": rich_inline(spec.get("hook", "")),
+        "META": meta,
+        "IDEA": rich_text(spec.get("idea", "")),
+        "WHY": rich_text(spec.get("why", "")),
+        "EQUATIONS": render_equations(spec.get("equations", [])),
+        "SYMBOLS": render_symbols(spec.get("symbols", [])),
+        "VISUAL_CAPTION": rich_inline(spec.get("visual_caption", "")),
+        "EXPLORATIONS": render_explorations(spec.get("explorations", [])),
+        "PITFALL_HEADING": rich_inline(heading),
+        "PITFALL_TEXT": rich_text(pitfall.get("text", "")),
+        "GROUNDING": render_grounding(spec.get("grounding", {}), case, excerpt),
+        "FOOTER": _esc(footer),
+        "SPEC_JSON": spec_json,
+        "LIB_JS": _script_safe(_read("lib.js")),
+        "MODEL_JS": _script_safe(code or ""),
+        "RUNTIME_JS": _script_safe(_read("runtime.js")),
+    }
+    # Single pass so that placeholder-like text inside values is never re-expanded.
+    return re.sub(r"\{\{([A-Z_]+)\}\}", lambda m: values.get(m.group(1), m.group(0)), page)

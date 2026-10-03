@@ -1,0 +1,80 @@
+"""Deterministic checks on the generated spec, code and page.
+
+Every check is logged to the trace with its outcome. Problems are phrased as
+instructions the model can act on in a revision.
+"""
+
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass, field
+
+from .parse import normalize_spec
+
+REQUIRED_FUNCTIONS = ("compute", "render", "show", "checks")
+FORBIDDEN_CODE = [
+    (r"\bfetch\s*\(", "uses fetch(); the page must work offline"),
+    (r"\bXMLHttpRequest\b", "uses XMLHttpRequest; the page must work offline"),
+    (r"^\s*import\s", "uses import; write plain script code"),
+    (r"\brequire\s*\(", "uses require(); write plain script code"),
+    (r"\bdocument\s*\.", "touches document; functions must be pure (the template owns the DOM)"),
+    (r"\bMath\.random\s*\(", "uses Math.random(); results must be deterministic"),
+    (r"https?://(?!www\.w3\.org/)", "contains a URL; the page must not load anything from the network"),
+]
+
+
+@dataclass
+class Report:
+    problems: list[str] = field(default_factory=list)
+    critical: bool = False
+
+
+def static_code_problems(code: str) -> list[str]:
+    problems = []
+    if not code.strip():
+        return ["the javascript block is missing or empty"]
+    for name in REQUIRED_FUNCTIONS:
+        if not re.search(rf"\bfunction\s+{name}\s*\(|\b(?:const|let|var)\s+{name}\s*=", code):
+            problems.append(f"code must define a top-level function {name}()")
+    for pattern, msg in FORBIDDEN_CODE:
+        if re.search(pattern, code, re.M):
+            problems.append(f"code {msg}")
+    return problems
+
+
+def run_all(spec: dict, code: str, trace, final: bool = False) -> Report:
+    stage = "final_check" if final else "check"
+    report = Report()
+    _, spec_errors, _ = normalize_spec(dict(spec.get("_raw", spec)))
+    trace.log(stage, "spec_structure", "pass" if not spec_errors else "fail", problems=spec_errors)
+    report.problems += spec_errors
+
+    code_problems = static_code_problems(code)
+    trace.log(stage, "code_static", "pass" if not code_problems else "fail", problems=code_problems)
+    report.problems += code_problems
+    if any("must define" in p or "missing" in p for p in code_problems):
+        report.critical = True
+    return report
+
+
+_EXTERNAL_RE = re.compile(
+    r"<(?:script|img|link|iframe|source|video|audio|embed|object)\b[^>]*\b(?:src|href|data)\s*=\s*[\"']?\s*(?:https?:)?//"
+    r"|@import|url\(\s*[\"']?\s*(?:https?:)?//",
+    re.I,
+)
+REQUIRED_IDS = ("idea", "symbols", "p2p-playground", "p2p-controls", "p2p-visual", "p2p-values",
+                "p2p-checks", "explore", "caveat", "grounding")
+
+
+def check_page(page: str, trace) -> list[str]:
+    problems = []
+    if _EXTERNAL_RE.search(page):
+        problems.append("page references an external resource")
+    for pid in REQUIRED_IDS:
+        if f'id="{pid}"' not in page:
+            problems.append(f"page is missing the #{pid} section")
+    if "{{" in page and re.search(r"\{\{[A-Z_]+\}\}", page):
+        problems.append("page has an unfilled template placeholder")
+    trace.log("final_check", "page_static", "pass" if not problems else "fail",
+              problems=problems, html_chars=len(page))
+    return problems

@@ -13,6 +13,9 @@ out/
 out_*/
 runs/
 
+# Local tool settings
+.claude/
+
 # OS / editor
 .DS_Store
 Thumbs.db

@@ -1,0 +1,1085 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entropy: How Much Choice Is in a Distribution?</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --card: #ffffff;
+    --ink: #1f2933;
+    --muted: #52606d;
+    --line: #e4e7eb;
+    --accent: #0b5cad;
+    --accent-soft: #e8f1fb;
+    --ok: #1a7f37;
+    --bad: #c62828;
+    --warn-soft: #fff6e5;
+    --warn: #b26a00;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  header.hero { background: var(--card); border-bottom: 1px solid var(--line); padding: 28px 16px 20px; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+  .kicker { margin: 0; color: var(--accent); font-weight: 600; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; }
+  h1 { margin: 6px 0 8px; font-size: clamp(26px, 4vw, 36px); line-height: 1.2; }
+  .hook { margin: 0 0 10px; font-size: 18px; color: var(--muted); max-width: 820px; }
+  .meta { margin: 0; font-size: 14px; color: var(--muted); }
+  nav.toc { position: sticky; top: 0; z-index: 5; background: rgba(246,247,249,.95); border-bottom: 1px solid var(--line); }
+  nav.toc .wrap { display: flex; gap: 6px 18px; flex-wrap: wrap; padding-top: 8px; padding-bottom: 8px; font-size: 14px; }
+  nav.toc a { color: var(--muted); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); }
+  main { padding: 20px 0 40px; }
+  section.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px 24px; margin: 0 0 18px; }
+  h2 { margin: 0 0 12px; font-size: 22px; }
+  h3 { margin: 18px 0 8px; font-size: 17px; }
+  p { margin: 0 0 10px; }
+  .equations { margin: 14px 0 4px; }
+  .equation { background: var(--accent-soft); border-radius: 8px; padding: 10px 14px; margin: 0 0 10px; }
+  .equation math[display="block"] { font-size: 1.25em; margin: 4px 0; }
+  .equation .caption { font-size: 14px; color: var(--muted); margin: 4px 0 0; }
+  math { font-size: 1.08em; }
+  table.symbols { border-collapse: collapse; width: 100%; font-size: 15px; }
+  table.symbols th, table.symbols td { border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+  table.symbols th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .03em; }
+  table.symbols td.sym { white-space: nowrap; width: 1%; font-size: 1.1em; }
+
+  /* playground */
+  .pg-grid { display: grid; grid-template-columns: minmax(250px, 340px) 1fr; gap: 20px; align-items: start; }
+  .pg-controls { background: #fafbfc; border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
+  .pg-controls h3, .pg-outputs h3 { margin-top: 0; }
+  .pg-visual { min-width: 0; }
+  #p2p-visual { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 8px; overflow-x: auto; }
+  #p2p-visual svg { display: block; margin: 0 auto; height: auto; }
+  .pg-visual .caption { font-size: 14px; color: var(--muted); margin-top: 8px; }
+  .pg-outputs { display: grid; grid-template-columns: 1fr minmax(240px, 320px); gap: 20px; margin-top: 18px; }
+  .p2p-control { margin: 0 0 14px; }
+  .p2p-control-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .p2p-label { font-weight: 600; font-size: 14px; }
+  .p2p-readout { font-variant-numeric: tabular-nums; font-size: 14px; color: var(--accent); min-width: 3.5em; text-align: right; }
+  .p2p-range { width: 100%; accent-color: var(--accent); }
+  .p2p-num { width: 4.8em; padding: 3px 4px; font: inherit; font-size: 14px; border: 1px solid #cbd2d9; border-radius: 4px; }
+  .p2p-num.p2p-invalid { border-color: var(--bad); background: #fdecea; }
+  .p2p-select { font: inherit; font-size: 14px; padding: 3px 6px; margin-top: 4px; width: 100%; }
+  .p2p-toggle { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+  .p2p-toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
+  .p2p-help { font-size: 13px; color: var(--muted); margin-top: 3px; }
+  .p2p-vector { display: grid; gap: 4px; margin-top: 4px; }
+  .p2p-vector-item { display: grid; grid-template-columns: minmax(2.2em, auto) 1fr auto; gap: 8px; align-items: center; font-size: 14px; }
+  .p2p-vector-name { color: var(--muted); }
+  table.p2p-matrix-input { border-collapse: collapse; margin-top: 4px; }
+  table.p2p-matrix-input th { font-weight: 500; font-size: 13px; color: var(--muted); padding: 0 4px; }
+  table.p2p-matrix-input td { padding: 2px; }
+  #p2p-reset, .p2p-try { font: inherit; font-size: 14px; border-radius: 6px; cursor: pointer; padding: 6px 12px; }
+  #p2p-reset { background: #fff; border: 1px solid #cbd2d9; color: var(--ink); }
+  .p2p-try { background: var(--accent); border: 1px solid var(--accent); color: #fff; }
+  .p2p-try:hover { filter: brightness(1.1); }
+  #p2p-values { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .p2p-value { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: #fff; min-width: 0; overflow-x: auto; }
+  .p2p-value-hl { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+  .p2p-value-label { font-size: 13px; color: var(--muted); font-weight: 600; }
+  .p2p-value-note { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .p2p-scalar { font-size: 20px; font-variant-numeric: tabular-nums; }
+  table.p2p-matrix { border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 14px; margin-top: 2px; }
+  table.p2p-matrix td { border: 1px solid var(--line); padding: 2px 7px; text-align: right; }
+  table.p2p-matrix th { font-weight: 500; color: var(--muted); font-size: 12px; padding: 1px 5px; }
+  #p2p-checks { list-style: none; margin: 0; padding: 0; font-size: 14px; }
+  #p2p-checks li { padding: 6px 8px; border-radius: 6px; margin-bottom: 6px; }
+  #p2p-checks li.p2p-pass { background: #eaf6ec; }
+  #p2p-checks li.p2p-fail { background: #fdecea; }
+  .p2p-pass .p2p-mark { color: var(--ok); font-weight: 700; }
+  .p2p-fail .p2p-mark { color: var(--bad); font-weight: 700; }
+  .p2p-check-detail { display: block; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .p2p-error { background: #fdecea; color: var(--bad); border-radius: 8px; padding: 10px 12px; margin-top: 12px; font-size: 14px; }
+
+  /* explorations, caveat, grounding */
+  .explorations { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .p2p-exploration { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+  .p2p-exploration.p2p-active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .p2p-exploration h3 { margin-top: 0; }
+  .p2p-exploration dl { margin: 8px 0 12px; }
+  .p2p-exploration dt { font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: .03em; color: var(--accent); margin-top: 8px; }
+  .p2p-exploration dd { margin: 2px 0 0; }
+  section.caveat { background: var(--warn-soft); border-color: #f3d9a4; }
+  section.caveat h2 { color: var(--warn); }
+  .ground-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 10px; }
+  .ground-grid > div { border-radius: 8px; padding: 12px 14px; }
+  .from-source { background: #eaf6ec; }
+  .ours { background: #f1f0fb; }
+  .ground-grid h3 { margin-top: 0; font-size: 15px; }
+  .ground-grid ul { margin: 0; padding-left: 20px; }
+  .disclaimer { font-size: 14px; color: var(--muted); border-left: 3px solid var(--line); padding-left: 10px; margin-top: 12px; }
+  details.excerpt { margin-top: 12px; font-size: 14px; }
+  details.excerpt blockquote { margin: 8px 0 0; padding: 10px 14px; background: #fafbfc; border-left: 3px solid var(--line); white-space: pre-wrap; }
+  footer { color: var(--muted); font-size: 13px; padding: 0 0 30px; }
+  code { background: #f0f2f4; padding: 1px 4px; border-radius: 4px; font-size: .92em; }
+
+  @media (max-width: 820px) {
+    .pg-grid, .pg-outputs, .explorations, .ground-grid { grid-template-columns: 1fr; }
+    section.card { padding: 18px 16px; }
+  }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <p class="kicker">Interactive explanation</p>
+    <h1>Entropy: How Much Choice Is in a Distribution?</h1>
+    <p class="hook">You will build a small probability distribution and watch Shannon's entropy <math aria-label="H = -\sum_i p_i \log_2 p_i"><mrow><mi>H</mi><mo>=</mo><mo>−</mo><munder><mo movablelimits="true">∑</mo><mi>i</mi></munder><msub><mi>p</mi><mi>i</mi></msub><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math> count, in bits, how uncertain the outcome is.</p>
+    <p class="meta">Written for: Engineering undergraduate who knows basic probability and logarithms but has not studied information theory.</p>
+  </div>
+</header>
+<nav class="toc" aria-label="Sections">
+  <div class="wrap">
+    <a href="#idea">1. The idea</a>
+    <a href="#symbols">2. Symbols</a>
+    <a href="#p2p-playground">3. Playground</a>
+    <a href="#explore">4. Guided explorations</a>
+    <a href="#caveat">5. Caveat</a>
+    <a href="#grounding">6. Source grounding</a>
+  </div>
+</nav>
+<main class="wrap">
+  <section id="idea" class="card">
+    <h2>1. The idea</h2>
+    <p>Shannon asks: given probabilities <math aria-label="p_1, \dots, p_n"><mrow><msub><mi>p</mi><mn>1</mn></msub><mo>,</mo><mo>…</mo><mo>,</mo><msub><mi>p</mi><mi>n</mi></msub></mrow></math> for a set of possible events, how much <strong>choice</strong> is involved in seeing which one occurs? He requires three things of any such measure <math aria-label="H"><mrow><mi>H</mi></mrow></math>: it should be continuous in the <math aria-label="p_i"><mrow><msub><mi>p</mi><mi>i</mi></msub></mrow></math>; it should increase with <math aria-label="n"><mrow><mi>n</mi></mrow></math> when all outcomes are equally likely; and breaking a choice into two successive choices should give the same total as one step. Theorem 2 says only one family of functions does this: <math aria-label="H = -K \sum_i p_i \log p_i"><mrow><mi>H</mi><mo>=</mo><mo>−</mo><mi>K</mi><munder><mo movablelimits="true">∑</mo><mi>i</mi></munder><msub><mi>p</mi><mi>i</mi></msub><mi mathvariant="normal">log</mi><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math>.</p><p>With <math aria-label="\log"><mrow><mi mathvariant="normal">log</mi><mspace width="0.1667em"></mspace></mrow></math> base 2 the constant <math aria-label="K"><mrow><mi>K</mi></mrow></math> just fixes the unit, and that unit is the <strong>bit</strong>. Each term <math aria-label="-p_i \log_2 p_i"><mrow><mo>−</mo><msub><mi>p</mi><mi>i</mi></msub><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math> is that outcome's contribution: an outcome with tiny probability contributes little (it is rarely chosen), and an outcome with probability 1 contributes nothing (there is no choice at all).</p><p>Two properties make the formula easy to sanity-check. First, <math aria-label="H = 0"><mrow><mi>H</mi><mo>=</mo><mn>0</mn></mrow></math> exactly when one <math aria-label="p_i"><mrow><msub><mi>p</mi><mi>i</mi></msub></mrow></math> equals 1 and the rest are 0 — certainty means no uncertainty. Second, for fixed <math aria-label="n"><mrow><mi>n</mi></mrow></math>, <math aria-label="H"><mrow><mi>H</mi></mrow></math> is largest when all <math aria-label="p_i = 1/n"><mrow><msub><mi>p</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn><mo>/</mo><mi>n</mi></mrow></math>, and then <math aria-label="H = \log_2 n"><mrow><mi>H</mi><mo>=</mo><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi></mrow></math>: two equally likely outcomes give 1 bit, four give 2 bits.</p><p>In the playground you set the number of outcomes and their weights. The weights are normalized into probabilities, so you can type any non-negative numbers and the page shows the resulting <math aria-label="p_i"><mrow><msub><mi>p</mi><mi>i</mi></msub></mrow></math>, each contribution <math aria-label="-p_i \log_2 p_i"><mrow><mo>−</mo><msub><mi>p</mi><mi>i</mi></msub><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math>, and the total <math aria-label="H"><mrow><mi>H</mi></mrow></math>.</p>
+    <h3>Why it matters</h3>
+    <p>Entropy is the currency of information theory: it is the average number of bits needed to describe an outcome, and it is the limit that compression and coding schemes approach. It also gives engineers a single number for how spread out or peaked a distribution is, which is why it reappears in coding, machine learning and statistical physics.</p>
+    <div class="equations"><div class="equation"><math display="block" aria-label="H = -K \sum_{i=1}^{n} p_i \log p_i"><mrow><mi>H</mi><mo>=</mo><mo>−</mo><mi>K</mi><munderover><mo movablelimits="true">∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mrow><mi>n</mi></mrow></munderover><msub><mi>p</mi><mi>i</mi></msub><mi mathvariant="normal">log</mi><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math><p class="caption">Theorem 2: the only measure of choice satisfying Shannon's three requirements. <math aria-label="K"><mrow><mi>K</mi></mrow></math> is a positive constant that only sets the unit.</p></div><div class="equation"><math display="block" aria-label="H = -\sum_{i=1}^{n} p_i \log_2 p_i"><mrow><mi>H</mi><mo>=</mo><mo>−</mo><munderover><mo movablelimits="true">∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mrow><mi>n</mi></mrow></munderover><msub><mi>p</mi><mi>i</mi></msub><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math><p class="caption">The same formula with base-2 logarithms and <math aria-label="K=1"><mrow><mi>K</mi><mo>=</mo><mn>1</mn></mrow></math>; the unit is then the bit.</p></div><div class="equation"><math display="block" aria-label="H = 0 \iff p_i = 1 \text{ for one } i, \; p_j = 0 \text{ otherwise}"><mrow><mi>H</mi><mo>=</mo><mn>0</mn><mo>⇔</mo><msub><mi>p</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn><mtext>forone</mtext><mi>i</mi><mo>,</mo><mspace width="0.2778em"></mspace><msub><mi>p</mi><mi>j</mi></msub><mo>=</mo><mn>0</mn><mtext>otherwise</mtext></mrow></math><p class="caption">Property (1): entropy vanishes exactly when the outcome is certain.</p></div><div class="equation"><math display="block" aria-label="H \le \log_2 n, \quad H = \log_2 n \iff p_i = 1/n \; \forall i"><mrow><mi>H</mi><mo>≤</mo><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi><mo>,</mo><mspace width="1em"></mspace><mi>H</mi><mo>=</mo><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi><mo>⇔</mo><msub><mi>p</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn><mo>/</mo><mi>n</mi><mspace width="0.2778em"></mspace><mo>∀</mo><mi>i</mi></mrow></math><p class="caption">Property (2): for fixed <math aria-label="n"><mrow><mi>n</mi></mrow></math> the maximum is <math aria-label="\log_2 n"><mrow><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi></mrow></math>, attained by the uniform distribution.</p></div><div class="equation"><math display="block" aria-label="H = -(p \log_2 p + q \log_2 q), \quad q = 1-p"><mrow><mi>H</mi><mo>=</mo><mo>−</mo><mo>(</mo><mi>p</mi><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>p</mi><mo>+</mo><mi>q</mi><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>q</mi><mo>)</mo><mo>,</mo><mspace width="1em"></mspace><mi>q</mi><mo>=</mo><mn>1</mn><mo>−</mo><mi>p</mi></mrow></math><p class="caption">The two-outcome case Shannon plots in Fig. 7; it peaks at 1 bit when <math aria-label="p = q = 1/2"><mrow><mi>p</mi><mo>=</mo><mi>q</mi><mo>=</mo><mn>1</mn><mo>/</mo><mn>2</mn></mrow></math>.</p></div></div>
+  </section>
+
+  <section id="symbols" class="card">
+    <h2>2. What the symbols mean</h2>
+    <table class="symbols"><thead><tr><th>Symbol</th><th>Meaning</th><th>In the playground</th></tr></thead><tbody><tr><td class="sym"><math aria-label="n"><mrow><mi>n</mi></mrow></math></td><td>number of possible events/outcomes</td><td>the <math aria-label="n"><mrow><mi>n</mi></mrow></math> control; it sets the length of the weight vector</td></tr><tr><td class="sym"><math aria-label="p_i"><mrow><msub><mi>p</mi><mi>i</mi></msub></mrow></math></td><td>probability of the <math aria-label="i"><mrow><mi>i</mi></mrow></math>-th event, with <math aria-label="p_i \ge 0"><mrow><msub><mi>p</mi><mi>i</mi></msub><mo>≥</mo><mn>0</mn></mrow></math> and <math aria-label="\sum_i p_i = 1"><mrow><munder><mo movablelimits="true">∑</mo><mi>i</mi></munder><msub><mi>p</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn></mrow></math></td><td>the normalized probabilities shown in the left bar chart and in the <math aria-label="p_i"><mrow><msub><mi>p</mi><mi>i</mi></msub></mrow></math> readout</td></tr><tr><td class="sym"><math aria-label="H"><mrow><mi>H</mi></mrow></math></td><td>entropy: the measure of choice or uncertainty, in bits when the log is base 2</td><td>the total shown under the contribution bars and in the readout</td></tr><tr><td class="sym"><math aria-label="-p_i \log_2 p_i"><mrow><mo>−</mo><msub><mi>p</mi><mi>i</mi></msub><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math></td><td>the contribution of outcome <math aria-label="i"><mrow><mi>i</mi></mrow></math> to the total entropy</td><td>the right bar chart, one bar per outcome</td></tr><tr><td class="sym"><math aria-label="\log_2 n"><mrow><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi></mrow></math></td><td>the maximum entropy for <math aria-label="n"><mrow><mi>n</mi></mrow></math> outcomes, reached when all <math aria-label="p_i = 1/n"><mrow><msub><mi>p</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn><mo>/</mo><mi>n</mi></mrow></math></td><td>the dashed reference line in both charts and the 'uniform reference' readout</td></tr><tr><td class="sym"><math aria-label="K"><mrow><mi>K</mi></mrow></math></td><td>positive constant fixing the unit of measure; <math aria-label="K=1"><mrow><mi>K</mi><mo>=</mo><mn>1</mn></mrow></math> with base-2 logs gives bits</td><td>fixed at 1 throughout the playground</td></tr></tbody></table>
+  </section>
+
+  <section id="p2p-playground" class="card">
+    <h2>3. Playground</h2>
+    <div class="pg-grid">
+      <div class="pg-controls">
+        <h3>Controls</h3>
+        <div id="p2p-controls"></div>
+        <button type="button" id="p2p-reset">Reset to defaults</button>
+      </div>
+      <div class="pg-visual">
+        <div id="p2p-visual" aria-live="polite"></div>
+        <p class="caption">Left panel: one bar per outcome showing its probability <math aria-label="p_i"><mrow><msub><mi>p</mi><mi>i</mi></msub></mrow></math> (blue), with a dashed line at the uniform level <math aria-label="1/n"><mrow><mn>1</mn><mo>/</mo><mi>n</mi></mrow></math>. Right panel: one bar per outcome showing its entropy contribution <math aria-label="-p_i \log_2 p_i"><mrow><mo>−</mo><msub><mi>p</mi><mi>i</mi></msub><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math> (green), with a dashed line at the maximum <math aria-label="\log_2 n"><mrow><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi></mrow></math>; the contributions sum to the total <math aria-label="H"><mrow><mi>H</mi></mrow></math> printed below. The tallest contribution bar is outlined.</p>
+      </div>
+    </div>
+    <div id="p2p-error" class="p2p-error" role="alert" hidden></div>
+    <div class="pg-outputs">
+      <div>
+        <h3>Intermediate values (computed live)</h3>
+        <div id="p2p-values"></div>
+      </div>
+      <div>
+        <h3>Live checks</h3>
+        <ul id="p2p-checks"></ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="explore" class="card">
+    <h2>4. Guided explorations</h2>
+    <div class="explorations"><article class="p2p-exploration"><h3>Exploration 1: Certainty gives zero bits</h3><dl><dt>Change</dt><dd>Set the preset to <strong>certain</strong> (or drag <math aria-label="w_1"><mrow><msub><mi>w</mi><mn>1</mn></msub></mrow></math> to 1 and the rest to 0).</dd><dt>Observe</dt><dd>The left chart shows one bar of height 1 and three of height 0. Every contribution bar in the right chart has height 0, and the total <math aria-label="H"><mrow><mi>H</mi></mrow></math> reads 0 bits.</dd><dt>Why</dt><dd>When one <math aria-label="p_i = 1"><mrow><msub><mi>p</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn></mrow></math> the outcome is known in advance, so there is no choice to measure. Formally <math aria-label="-1 \cdot \log_2 1 = 0"><mrow><mo>−</mo><mn>1</mn><mo>⋅</mo><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mn>1</mn><mo>=</mo><mn>0</mn></mrow></math> and the zero-probability terms are defined as 0, so the whole sum is 0 — Shannon's Property (1).</dd></dl><button type="button" class="p2p-try" data-p2p-preset="0">Set up this exploration</button></article><article class="p2p-exploration"><h3>Exploration 2: Uniform distributions give <math aria-label="\log_2 n"><mrow><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi></mrow></math> bits</h3><dl><dt>Change</dt><dd>Start at <math aria-label="n = 4"><mrow><mi>n</mi><mo>=</mo><mn>4</mn></mrow></math> with the uniform preset, then change <math aria-label="n"><mrow><mi>n</mi></mrow></math> to 2, then to 3, then to 6 (re-choosing the uniform preset each time).</dd><dt>Observe</dt><dd>The total <math aria-label="H"><mrow><mi>H</mi></mrow></math> and the dashed reference line both move: <math aria-label="n=2"><mrow><mi>n</mi><mo>=</mo><mn>2</mn></mrow></math> gives 1 bit, <math aria-label="n=4"><mrow><mi>n</mi><mo>=</mo><mn>4</mn></mrow></math> gives 2 bits, <math aria-label="n=6"><mrow><mi>n</mi><mo>=</mo><mn>6</mn></mrow></math> gives about 2.585 bits. The 'uniform reference <math aria-label="\log_2 n"><mrow><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi></mrow></math>' readout always equals the total <math aria-label="H"><mrow><mi>H</mi></mrow></math> when the bars are level.</dd><dt>Why</dt><dd>For equal probabilities each term is <math aria-label="-(1/n)\log_2(1/n) = (\log_2 n)/n"><mrow><mo>−</mo><mo>(</mo><mn>1</mn><mo>/</mo><mi>n</mi><mo>)</mo><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mo>(</mo><mn>1</mn><mo>/</mo><mi>n</mi><mo>)</mo><mo>=</mo><mo>(</mo><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi><mo>)</mo><mo>/</mo><mi>n</mi></mrow></math>, and summing <math aria-label="n"><mrow><mi>n</mi></mrow></math> of them gives <math aria-label="\log_2 n"><mrow><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi></mrow></math>. This is Shannon's Property (2): more equally likely events means more uncertainty, and the growth is logarithmic, so doubling <math aria-label="n"><mrow><mi>n</mi></mrow></math> adds exactly one bit.</dd></dl><button type="button" class="p2p-try" data-p2p-preset="1">Set up this exploration</button></article></div>
+  </section>
+
+  <section id="caveat" class="card caveat">
+    <h2>5. Misconception: Entropy is not the number of outcomes</h2>
+    <p>A distribution over 6 outcomes can have less entropy than one over 2 outcomes: if the 6-outcome distribution is very peaked, <math aria-label="H"><mrow><mi>H</mi></mrow></math> can be near 0, while two equally likely outcomes give exactly 1 bit. Entropy measures how <strong>spread out</strong> the probability mass is, not how many outcomes exist. The maximum <math aria-label="\log_2 n"><mrow><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi></mrow></math> is only reached in the uniform case.</p>
+  </section>
+
+  <section id="grounding" class="card">
+    <h2>6. Source grounding</h2>
+    <p><strong>Paper:</strong> A Mathematical Theory of Communication (C. E. Shannon, 1948) &mdash; <a href="https://people.math.harvard.edu/~ctm/home/text/others/shannon/entropy/entropy.pdf">https://people.math.harvard.edu/~ctm/home/text/others/shannon/entropy/entropy.pdf</a></p><p><strong>Relevant part:</strong> Section 6, Choice, Uncertainty and Entropy (Theorem 2 and Properties (1)-(2))</p><div class="ground-grid"><div class="from-source"><h3>Supported by the source excerpt</h3><ul><li>Shannon considers a set of possible events with known probabilities <math aria-label="p_1, \dots, p_n"><mrow><msub><mi>p</mi><mn>1</mn></msub><mo>,</mo><mo>…</mo><mo>,</mo><msub><mi>p</mi><mi>n</mi></msub></mrow></math> and asks for a measure <math aria-label="H(p_1, \dots, p_n)"><mrow><mi>H</mi><mo>(</mo><msub><mi>p</mi><mn>1</mn></msub><mo>,</mo><mo>…</mo><mo>,</mo><msub><mi>p</mi><mi>n</mi></msub><mo>)</mo></mrow></math> of how much choice or uncertainty is involved.</li><li>He requires: (1) <math aria-label="H"><mrow><mi>H</mi></mrow></math> is continuous in the <math aria-label="p_i"><mrow><msub><mi>p</mi><mi>i</mi></msub></mrow></math>; (2) if all <math aria-label="p_i"><mrow><msub><mi>p</mi><mi>i</mi></msub></mrow></math> are equal then <math aria-label="H"><mrow><mi>H</mi></mrow></math> is a monotonic increasing function of <math aria-label="n"><mrow><mi>n</mi></mrow></math>; (3) breaking a choice into two successive choices makes the original <math aria-label="H"><mrow><mi>H</mi></mrow></math> the weighted sum of the individual values.</li><li>Theorem 2: the only <math aria-label="H"><mrow><mi>H</mi></mrow></math> satisfying these assumptions is <math aria-label="H = -K \sum_{i=1}^n p_i \log p_i"><mrow><mi>H</mi><mo>=</mo><mo>−</mo><mi>K</mi><munderover><mo movablelimits="true">∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><msub><mi>p</mi><mi>i</mi></msub><mi mathvariant="normal">log</mi><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math>, with <math aria-label="K"><mrow><mi>K</mi></mrow></math> a positive constant amounting to a choice of unit.</li><li>With logarithms to base 2 the unit is the bit.</li><li>Property (1): <math aria-label="H = 0"><mrow><mi>H</mi><mo>=</mo><mn>0</mn></mrow></math> if and only if all <math aria-label="p_i"><mrow><msub><mi>p</mi><mi>i</mi></msub></mrow></math> but one are zero, that one having the value unity; only when the outcome is certain does <math aria-label="H"><mrow><mi>H</mi></mrow></math> vanish, otherwise <math aria-label="H"><mrow><mi>H</mi></mrow></math> is positive.</li><li>Property (2): for a given <math aria-label="n"><mrow><mi>n</mi></mrow></math>, <math aria-label="H"><mrow><mi>H</mi></mrow></math> is a maximum equal to <math aria-label="\log n"><mrow><mi mathvariant="normal">log</mi><mspace width="0.1667em"></mspace><mi>n</mi></mrow></math> when all <math aria-label="p_i"><mrow><msub><mi>p</mi><mi>i</mi></msub></mrow></math> are equal to <math aria-label="1/n"><mrow><mn>1</mn><mo>/</mo><mi>n</mi></mrow></math>, which is also intuitively the most uncertain situation.</li><li>For two possibilities with probabilities <math aria-label="p"><mrow><mi>p</mi></mrow></math> and <math aria-label="q = 1-p"><mrow><mi>q</mi><mo>=</mo><mn>1</mn><mo>−</mo><mi>p</mi></mrow></math>, <math aria-label="H = -(p \log p + q \log q)"><mrow><mi>H</mi><mo>=</mo><mo>−</mo><mo>(</mo><mi>p</mi><mi mathvariant="normal">log</mi><mspace width="0.1667em"></mspace><mi>p</mi><mo>+</mo><mi>q</mi><mi mathvariant="normal">log</mi><mspace width="0.1667em"></mspace><mi>q</mi><mo>)</mo></mrow></math>, plotted as a function of <math aria-label="p"><mrow><mi>p</mi></mrow></math> in Fig. 7.</li></ul></div><div class="ours"><h3>Our examples and simplifications (not from the paper)</h3><ul><li>The interactive playground, the weight-normalization step (entering arbitrary non-negative <math aria-label="w_i"><mrow><msub><mi>w</mi><mi>i</mi></msub></mrow></math> and dividing by their sum), and the choice of base-2 logs with <math aria-label="K=1"><mrow><mi>K</mi><mo>=</mo><mn>1</mn></mrow></math>.</li><li>The convention <math aria-label="0 \log_2 0 = 0"><mrow><mn>0</mn><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mn>0</mn><mo>=</mo><mn>0</mn></mrow></math> used to handle zero probabilities numerically.</li><li>The specific toy values in the presets and tests (e.g. <math aria-label="n=4"><mrow><mi>n</mi><mo>=</mo><mn>4</mn></mrow></math> uniform, the skewed distribution).</li><li>The bar-chart visual, the contribution decomposition <math aria-label="-p_i \log_2 p_i"><mrow><mo>−</mo><msub><mi>p</mi><mi>i</mi></msub><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math>, and the framing of entropy as 'how spread out the mass is'.</li></ul></div></div><p class="disclaimer">This page is a toy illustration of the entropy formula and its two stated properties. It does not reproduce Shannon's experiments or any coding results; all numbers shown come from evaluating <math aria-label="H = -\sum_i p_i \log_2 p_i"><mrow><mi>H</mi><mo>=</mo><mo>−</mo><munder><mo movablelimits="true">∑</mo><mi>i</mi></munder><msub><mi>p</mi><mi>i</mi></msub><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math> on the distribution you set.</p><details class="excerpt"><summary>Source excerpt given to the generator</summary><blockquote>6. Choice, Uncertainty and Entropy. Suppose we have a set of possible events whose probabilities of occurrence are p_1, p_2, ..., p_n. These probabilities are known but that is all we know concerning which event will occur. Can we find a measure of how much &quot;choice&quot; is involved in the selection of the event, or of how uncertain we are of the outcome? If there is such a measure, say H(p_1, p_2, ..., p_n), it is reasonable to require of it the following properties: (1) H should be continuous in the p_i. (2) If all the p_i are equal, p_i = 1/n, then H should be a monotonic increasing function of n: with equally likely events there is more choice, or uncertainty, when there are more possible events. (3) If a choice be broken down into two successive choices, the original H should be the weighted sum of the individual values of H. Theorem 2: The only H satisfying the three above assumptions is of the form H = -K sum_{i=1}^{n} p_i log p_i, where K is a positive constant (it merely amounts to a choice of a unit of measure). Quantities of the form H = -sum p_i log p_i play a central role in information theory as measures of information, choice and uncertainty, and will be recognized as the entropy of statistical mechanics. With logarithms to the base 2, the unit is the bit. Properties of H: (1) H = 0 if and only if all the p_i but one are zero, this one having the value unity; thus only when we are certain of the outcome does H vanish, otherwise H is positive. (2) For a given n, H is a maximum and equal to log n when all the p_i are equal (i.e., 1/n); this is also intuitively the most uncertain situation. For two possibilities with probabilities p and q = 1 - p, H = -(p log p + q log q), which is plotted as a function of p in Fig. 7.</blockquote></details>
+  </section>
+</main>
+<footer class="wrap">Generated by paper-to-playground. All numbers on this page are computed live in your browser from the controls; nothing is loaded from the internet.</footer>
+<script id="p2p-spec" type="application/json">{"controls": [{"id": "n", "type": "number", "label": "number of outcomes $n$", "min": 1.0, "max": 6.0, "step": 1.0, "value": 4.0, "help": "How many possible events there are. The weight vector is resized to match.", "labelHtml": "number of outcomes <math aria-label=\"n\"><mrow><mi>n<\/mi><\/mrow><\/math>", "helpHtml": "How many possible events there are. The weight vector is resized to match."}, {"id": "w", "type": "vector", "label": "weights $w_i$ (normalized to $p_i$)", "length": "n", "min": 0.0, "max": 1.0, "step": 0.05, "value": [0.25, 0.25, 0.25, 0.25], "labels": ["$w_1$", "$w_2$", "$w_3$", "$w_4$", "$w_5$", "$w_6$"], "fill": 0, "help": "Any non-negative numbers; the page divides by their sum to get $p_i$.", "labelHtml": "weights <math aria-label=\"w_i\"><mrow><msub><mi>w<\/mi><mi>i<\/mi><\/msub><\/mrow><\/math> (normalized to <math aria-label=\"p_i\"><mrow><msub><mi>p<\/mi><mi>i<\/mi><\/msub><\/mrow><\/math>)", "helpHtml": "Any non-negative numbers; the page divides by their sum to get <math aria-label=\"p_i\"><mrow><msub><mi>p<\/mi><mi>i<\/mi><\/msub><\/mrow><\/math>."}, {"id": "preset", "type": "select", "label": "preset distribution", "options": [{"value": "uniform", "label": "uniform ($p_i = 1/n$)"}, {"value": "certain", "label": "certain ($p_1 = 1$)"}, {"value": "skew", "label": "skewed"}, {"value": "custom", "label": "custom (use the sliders)"}], "value": "uniform", "help": "Choosing a preset overwrites the weights; move a slider to go back to custom.", "labelHtml": "preset distribution", "helpHtml": "Choosing a preset overwrites the weights; move a slider to go back to custom."}], "explorations": [{"preset": {"n": 4, "preset": "certain", "w": [1, 0, 0, 0]}}, {"preset": {"n": 4, "preset": "uniform", "w": [0.25, 0.25, 0.25, 0.25]}}]}</script>
+<script>
+/* Paper to Playground - generic helper library "L".
+ * Pure functions only (no DOM): math utilities, number formatting and SVG
+ * string builders. Loaded into every generated page and into the V8 checker,
+ * so generated compute()/render() code behaves identically in both places.
+ * This file is generic: it contains no paper-specific content.
+ */
+var L = (function () {
+  'use strict';
+  var L = {};
+
+  // ------------------------------------------------------------------ math
+  L.isNum = function (x) { return typeof x === 'number' && isFinite(x); };
+  L.range = function (n) { var a = []; for (var i = 0; i < n; i++) a.push(i); return a; };
+  L.linspace = function (a, b, n) {
+    if (n < 2) return [a];
+    var s = (b - a) / (n - 1);
+    return L.range(n).map(function (i) { return a + i * s; });
+  };
+  L.sum = function (a) { var s = 0; for (var i = 0; i < a.length; i++) s += a[i]; return s; };
+  L.mean = function (a) { return a.length ? L.sum(a) / a.length : NaN; };
+  L.max = function (a) { var m = -Infinity; for (var i = 0; i < a.length; i++) if (a[i] > m) m = a[i]; return m; };
+  L.min = function (a) { var m = Infinity; for (var i = 0; i < a.length; i++) if (a[i] < m) m = a[i]; return m; };
+  L.argmax = function (a) { var k = 0; for (var i = 1; i < a.length; i++) if (a[i] > a[k]) k = i; return k; };
+  L.argmin = function (a) { var k = 0; for (var i = 1; i < a.length; i++) if (a[i] < a[k]) k = i; return k; };
+  L.clamp = function (x, lo, hi) { return Math.min(hi, Math.max(lo, x)); };
+  L.round = function (x, d) { var f = Math.pow(10, d == null ? 3 : d); return Math.round(x * f) / f; };
+  L.log2 = function (x) { return Math.log(x) / Math.LN2; };
+  L.copy = function (x) { return JSON.parse(JSON.stringify(x)); };
+  L.zeros = function (r, c) {
+    if (c == null) return L.range(r).map(function () { return 0; });
+    return L.range(r).map(function () { return L.range(c).map(function () { return 0; }); });
+  };
+  L.dot = function (a, b) { var s = 0; for (var i = 0; i < a.length; i++) s += a[i] * b[i]; return s; };
+  L.transpose = function (A) {
+    if (!A.length) return [];
+    return A[0].map(function (_, j) { return A.map(function (row) { return row[j]; }); });
+  };
+  L.matmul = function (A, B) {
+    var Bt = L.transpose(B);
+    return A.map(function (row) { return Bt.map(function (col) { return L.dot(row, col); }); });
+  };
+  L.matvec = function (A, v) { return A.map(function (row) { return L.dot(row, v); }); };
+  L.mapM = function (A, f) { return A.map(function (row, i) { return row.map(function (x, j) { return f(x, i, j); }); }); };
+  L.softmax = function (a, T) {
+    T = T == null ? 1 : T;
+    var m = L.max(a);
+    var e = a.map(function (x) { return Math.exp((x - m) / T); });
+    var s = L.sum(e);
+    return e.map(function (x) { return x / s; });
+  };
+  /* Rescale non-negative weights to sum to 1. Returns all zeros if the sum is 0. */
+  L.normalize = function (a) {
+    var s = L.sum(a);
+    return a.map(function (x) { return s > 0 ? x / s : 0; });
+  };
+
+  // ------------------------------------------------------------ formatting
+  /* Format a number for display: d decimals, trailing zeros removed,
+   * exponential notation for very small / very large magnitudes. */
+  L.fmt = function (x, d) {
+    d = d == null ? 3 : d;
+    if (typeof x === 'boolean') return x ? 'true' : 'false';
+    if (typeof x !== 'number') return String(x);
+    if (isNaN(x)) return 'NaN';
+    if (!isFinite(x)) return x > 0 ? '∞' : '-∞';
+    var ax = Math.abs(x);
+    if (ax !== 0 && (ax < Math.pow(10, -d) || ax >= 1e6)) return x.toExponential(Math.max(1, d - 1));
+    var s = x.toFixed(d);
+    if (s.indexOf('.') >= 0) s = s.replace(/0+$/, '').replace(/\.$/, '');
+    if (s === '-0') s = '0';
+    return s;
+  };
+  L.esc = function (s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  };
+
+  // ----------------------------------------------------------------- colors
+  var PALETTE = ['#0072B2', '#E69F00', '#009E73', '#D55E00', '#CC79A7', '#56B4E9', '#8C6D1F', '#555555'];
+  L.color = function (i) { return PALETTE[((i % PALETTE.length) + PALETTE.length) % PALETTE.length]; };
+  function mix(c1, c2, t) {
+    t = L.clamp(isFinite(t) ? t : 0, 0, 1);
+    var r = Math.round(c1[0] + (c2[0] - c1[0]) * t), g = Math.round(c1[1] + (c2[1] - c1[1]) * t),
+      b = Math.round(c1[2] + (c2[2] - c1[2]) * t);
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
+  /* Sequential color for t in [0,1] (light -> dark blue). */
+  L.heat = function (t) { return mix([239, 245, 252], [8, 69, 148], t); };
+  /* Diverging color for t in [-1,1] (red <- white -> blue). */
+  L.diverge = function (t) {
+    t = L.clamp(isFinite(t) ? t : 0, -1, 1);
+    return t < 0 ? mix([255, 255, 255], [202, 0, 32], -t) : mix([255, 255, 255], [5, 113, 176], t);
+  };
+  function isDark(rgb) {
+    var m = /rgb\((\d+),(\d+),(\d+)\)/.exec(rgb);
+    if (!m) return false;
+    return 0.299 * m[1] + 0.587 * m[2] + 0.114 * m[3] < 140;
+  }
+
+  // -------------------------------------------------------------- svg basics
+  function attrs(o) {
+    var s = '';
+    for (var k in o) {
+      if (o[k] === undefined || o[k] === null || o[k] === false) continue;
+      s += ' ' + k + '="' + L.esc(o[k]) + '"';
+    }
+    return s;
+  }
+  function num(x) { return isFinite(x) ? Math.round(x * 100) / 100 : 0; }
+
+  /* Wrap a body in a responsive <svg> with the given viewBox size. */
+  L.svg = function (w, h, body, o) {
+    o = o || {};
+    return '<svg xmlns="http://www.w3.org/2000/svg" class="p2p-svg" viewBox="0 0 ' + num(w) + ' ' + num(h) +
+      '" width="100%" style="max-width:' + num(w) + 'px;font-family:inherit" role="img"' +
+      (o.title ? ' aria-label="' + L.esc(o.title) + '"' : '') + '>' +
+      (o.title ? '<title>' + L.esc(o.title) + '</title>' : '') + body + '</svg>';
+  };
+  L.g = function (body, o) { o = o || {}; return '<g' + attrs({ transform: o.transform, opacity: o.opacity }) + '>' + body + '</g>'; };
+  L.text = function (x, y, str, o) {
+    o = o || {};
+    var tr = o.rotate ? 'rotate(' + o.rotate + ' ' + num(x) + ' ' + num(y) + ')' : null;
+    return '<text' + attrs({
+      x: num(x), y: num(y), 'font-size': o.size || 13, 'text-anchor': o.anchor || 'start',
+      'dominant-baseline': o.baseline || null, fill: o.color || '#1f2933',
+      'font-weight': o.weight || null, 'font-style': o.italic ? 'italic' : null, transform: tr, class: o.cls || null
+    }) + '>' + L.esc(str) + '</text>';
+  };
+  L.line = function (x1, y1, x2, y2, o) {
+    o = o || {};
+    return '<line' + attrs({
+      x1: num(x1), y1: num(y1), x2: num(x2), y2: num(y2), stroke: o.color || '#52606d',
+      'stroke-width': o.width || 1.5, 'stroke-dasharray': o.dash || null, opacity: o.opacity
+    }) + '/>';
+  };
+  L.rect = function (x, y, w, h, o) {
+    o = o || {};
+    return '<rect' + attrs({
+      x: num(x), y: num(y), width: num(Math.max(0, w)), height: num(Math.max(0, h)), rx: o.rx || null,
+      fill: o.fill || 'none', stroke: o.stroke || null, 'stroke-width': o.stroke ? (o.width || 1) : null,
+      opacity: o.opacity
+    }) + '/>';
+  };
+  L.circle = function (cx, cy, r, o) {
+    o = o || {};
+    return '<circle' + attrs({
+      cx: num(cx), cy: num(cy), r: num(Math.max(0, r)), fill: o.fill || '#0072B2', stroke: o.stroke || null,
+      'stroke-width': o.stroke ? (o.width || 1) : null, opacity: o.opacity
+    }) + '/>';
+  };
+  L.path = function (d, o) {
+    o = o || {};
+    return '<path' + attrs({
+      d: d, fill: o.fill || 'none', stroke: o.color || '#0072B2', 'stroke-width': o.width || 2,
+      'stroke-dasharray': o.dash || null, opacity: o.opacity
+    }) + '/>';
+  };
+  /* Polyline through [[x,y],...]; non-finite points break the line. */
+  L.polyline = function (pts, o) {
+    var d = '', pen = false;
+    for (var i = 0; i < pts.length; i++) {
+      var p = pts[i];
+      if (!p || !isFinite(p[0]) || !isFinite(p[1])) { pen = false; continue; }
+      d += (pen ? 'L' : 'M') + num(p[0]) + ' ' + num(p[1]) + ' ';
+      pen = true;
+    }
+    return d ? L.path(d.trim(), o) : '';
+  };
+  /* Straight arrow with a filled head (no <marker> ids needed). */
+  L.arrow = function (x1, y1, x2, y2, o) {
+    o = o || {};
+    var c = o.color || '#52606d', hs = o.head || 8, ang = Math.atan2(y2 - y1, x2 - x1);
+    var bx = x2 - hs * Math.cos(ang), by = y2 - hs * Math.sin(ang);
+    var p1 = [bx + hs * 0.5 * Math.sin(ang), by - hs * 0.5 * Math.cos(ang)];
+    var p2 = [bx - hs * 0.5 * Math.sin(ang), by + hs * 0.5 * Math.cos(ang)];
+    var s = L.line(x1, y1, bx, by, { color: c, width: o.width || 1.5, dash: o.dash }) +
+      '<polygon points="' + num(x2) + ',' + num(y2) + ' ' + num(p1[0]) + ',' + num(p1[1]) + ' ' +
+      num(p2[0]) + ',' + num(p2[1]) + '" fill="' + L.esc(c) + '"/>';
+    if (o.label) s += L.text((x1 + x2) / 2, (y1 + y2) / 2 - 6, o.label, { anchor: 'middle', size: o.size || 12, color: c });
+    return s;
+  };
+  /* Legend items [{label,color}] laid out vertically from (x,y). */
+  L.legend = function (x, y, items, o) {
+    o = o || {};
+    return items.map(function (it, i) {
+      var yy = y + i * (o.gap || 18);
+      return L.rect(x, yy - 6, 12, 12, { fill: it.color || L.color(i), rx: 2 }) +
+        L.text(x + 18, yy, it.label, { size: o.size || 12, baseline: 'middle' });
+    }).join('');
+  };
+
+  /* "Nice" tick values covering [a,b]. */
+  L.ticks = function (a, b, n) {
+    n = n || 5;
+    if (!isFinite(a) || !isFinite(b)) return [];
+    if (a === b) return [a];
+    if (a > b) { var t = a; a = b; b = t; }
+    var raw = (b - a) / Math.max(1, n - 1), mag = Math.pow(10, Math.floor(Math.log10(raw))), r = raw / mag;
+    var step = (r <= 1 ? 1 : r <= 2 ? 2 : r <= 2.5 ? 2.5 : r <= 5 ? 5 : 10) * mag;
+    var out = [];
+    for (var v = Math.ceil(a / step - 1e-9) * step; v <= b + step * 1e-9; v += step) out.push(Math.abs(v) < step * 1e-9 ? 0 : v);
+    return out;
+  };
+  L.scale = function (d0, d1, r0, r1) {
+    return function (v) { return d1 === d0 ? (r0 + r1) / 2 : r0 + (v - d0) * (r1 - r0) / (d1 - d0); };
+  };
+
+  // ----------------------------------------------------------------- charts
+  /* Bar chart inside box {x,y,w,h}. Handles negative values (baseline at 0).
+   * o: values, labels, min, max, colors (array) | color, highlight (index or
+   * array of indices), title, yLabel, fmt(v), showValues (default true),
+   * refLines [{value,label,color}]. */
+  L.bars = function (o) {
+    var x = o.x || 0, y = o.y || 0, w = o.w || 320, h = o.h || 200, vals = o.values || [], n = vals.length;
+    var fmt = o.fmt || function (v) { return L.fmt(v, 3); };
+    var fin = vals.filter(isFinite);
+    var lo = o.min != null ? o.min : Math.min(0, fin.length ? L.min(fin) : 0);
+    var hi = o.max != null ? o.max : Math.max(0, fin.length ? L.max(fin) : 1);
+    if (hi === lo) hi = lo + 1;
+    var top = y + (o.title ? 22 : 6) + 16, bottom = y + h - (o.labels ? 22 : 6), left = x + (o.yLabel ? 46 : 34), right = x + w - 4;
+    var sy = L.scale(lo, hi, bottom, top), s = '';
+    if (o.title) s += L.text(x + w / 2, y + 14, o.title, { anchor: 'middle', size: 13, weight: 600 });
+    if (o.yLabel) s += L.text(x + 11, (top + bottom) / 2, o.yLabel, { anchor: 'middle', size: 12, rotate: -90 });
+    L.ticks(lo, hi, 4).forEach(function (t) {
+      s += L.line(left, sy(t), right, sy(t), { color: '#e4e7eb', width: 1 }) +
+        L.text(left - 4, sy(t), L.fmt(t, 3), { anchor: 'end', size: 10, baseline: 'middle', color: '#616e7c' });
+    });
+    var bw = (right - left) / Math.max(1, n), hl = o.highlight == null ? [] : [].concat(o.highlight);
+    vals.forEach(function (v, i) {
+      var bx = left + i * bw + bw * 0.15, bwi = bw * 0.7, vv = isFinite(v) ? L.clamp(v, lo, hi) : 0;
+      var y0 = sy(L.clamp(0, lo, hi)), y1 = sy(vv), col = o.colors ? o.colors[i % o.colors.length] : (o.color || L.color(0));
+      s += L.rect(bx, Math.min(y0, y1), bwi, Math.abs(y1 - y0), { fill: col, stroke: hl.indexOf(i) >= 0 ? '#1f2933' : null, width: 2, rx: 2 });
+      if (o.showValues !== false) s += L.text(bx + bwi / 2, v >= 0 ? Math.min(y0, y1) - 4 : Math.max(y0, y1) + 12, isFinite(v) ? fmt(v) : String(v), { anchor: 'middle', size: 11 });
+      if (o.labels) s += L.text(bx + bwi / 2, bottom + 15, o.labels[i] == null ? '' : o.labels[i], { anchor: 'middle', size: 12 });
+    });
+    s += L.line(left, sy(L.clamp(0, lo, hi)), right, sy(L.clamp(0, lo, hi)), { color: '#52606d', width: 1 });
+    (o.refLines || []).forEach(function (r) {
+      if (!isFinite(r.value)) return;
+      var yy = sy(L.clamp(r.value, lo, hi));
+      s += L.line(left, yy, right, yy, { color: r.color || '#D55E00', dash: '5 3', width: 1.5 });
+      if (r.label) s += L.text(right, yy - 4, r.label, { anchor: 'end', size: 11, color: r.color || '#D55E00' });
+    });
+    return s;
+  };
+
+  /* Matrix heatmap inside box {x,y,w,h} with optional row/column labels.
+   * o: matrix, rowLabels, colLabels, title, min, max, fmt(v), showValues,
+   * highlight [[i,j],...]. Diverging colors when the range spans zero. */
+  L.heatmap = function (o) {
+    var M = o.matrix || [[]], rows = M.length, cols = rows ? M[0].length : 0;
+    var x = o.x || 0, y = o.y || 0, w = o.w || 240, h = o.h || 200;
+    var fmt = o.fmt || function (v) { return L.fmt(v, 2); };
+    var flat = [].concat.apply([], M).filter(isFinite);
+    var lo = o.min != null ? o.min : (flat.length ? L.min(flat) : 0), hi = o.max != null ? o.max : (flat.length ? L.max(flat) : 1);
+    var div = lo < 0 && hi > 0, amax = Math.max(Math.abs(lo), Math.abs(hi)) || 1;
+    var topH = (o.title ? 20 : 0) + (o.colLabels ? 18 : 0), leftW = o.rowLabels ? 40 : 0;
+    var cell = Math.max(8, Math.min((w - leftW) / Math.max(1, cols), (h - topH) / Math.max(1, rows)));
+    var s = '', gx = x + leftW, gy = y + topH, hl = o.highlight || [];
+    if (o.title) s += L.text(gx + cols * cell / 2, y + 13, o.title, { anchor: 'middle', size: 13, weight: 600 });
+    for (var j = 0; j < cols && o.colLabels; j++) s += L.text(gx + (j + 0.5) * cell, gy - 5, o.colLabels[j] == null ? '' : o.colLabels[j], { anchor: 'middle', size: 11, color: '#616e7c' });
+    for (var i = 0; i < rows; i++) {
+      if (o.rowLabels) s += L.text(gx - 5, gy + (i + 0.5) * cell, o.rowLabels[i] == null ? '' : o.rowLabels[i], { anchor: 'end', size: 11, baseline: 'middle', color: '#616e7c' });
+      for (var k = 0; k < cols; k++) {
+        var v = M[i][k], fill = !isFinite(v) ? '#f8d7da' : div ? L.diverge(v / amax) : L.heat(hi === lo ? 0.5 : (v - lo) / (hi - lo));
+        var isH = hl.some(function (p) { return p[0] === i && p[1] === k; });
+        s += L.rect(gx + k * cell, gy + i * cell, cell - 2, cell - 2, { fill: fill, stroke: isH ? '#1f2933' : '#ffffff', width: isH ? 2.5 : 1, rx: 3 });
+        if (o.showValues !== false && cell >= 22) s += L.text(gx + k * cell + (cell - 2) / 2, gy + i * cell + (cell - 2) / 2, isFinite(v) ? fmt(v) : String(v), { anchor: 'middle', baseline: 'middle', size: Math.min(13, cell / 3.2), color: isDark(fill) ? '#ffffff' : '#1f2933' });
+      }
+    }
+    return s;
+  };
+
+  /* Line/scatter plot inside box {x,y,w,h}.
+   * o: series [{points:[[x,y],...], label, color, dash, width, dots}],
+   * xDomain [a,b], yDomain [a,b] (auto if omitted), xLabel, yLabel, title,
+   * markers [{x,y,label,color,r}], vlines [{x,label,color}], hlines [{y,label,color}],
+   * legend (default true when any series has a label). Returns an SVG
+   * fragment string. L.plotScales(o) with the same options returns the
+   * {sx, sy} functions that map data coordinates to pixels. */
+  L.plotScales = function (o) {
+    var x = o.x || 0, y = o.y || 0, w = o.w || 360, h = o.h || 220, series = o.series || [];
+    var xs = [], ys = [];
+    series.forEach(function (sr) { (sr.points || []).forEach(function (p) { if (isFinite(p[0]) && isFinite(p[1])) { xs.push(p[0]); ys.push(p[1]); } }); });
+    (o.markers || []).forEach(function (m) { if (isFinite(m.x) && isFinite(m.y)) { xs.push(m.x); ys.push(m.y); } });
+    var xd = o.xDomain || [xs.length ? L.min(xs) : 0, xs.length ? L.max(xs) : 1];
+    var yd = o.yDomain || [ys.length ? Math.min(0, L.min(ys)) : 0, ys.length ? L.max(ys) : 1];
+    if (xd[0] === xd[1]) xd = [xd[0] - 1, xd[1] + 1];
+    if (yd[0] === yd[1]) yd = [yd[0] - 1, yd[1] + 1];
+    var left = x + (o.yLabel ? 52 : 40), right = x + w - 10, top = y + (o.title ? 24 : 8), bottom = y + h - (o.xLabel ? 38 : 24);
+    return { sx: L.scale(xd[0], xd[1], left, right), sy: L.scale(yd[0], yd[1], bottom, top), xd: xd, yd: yd, left: left, right: right, top: top, bottom: bottom };
+  };
+  L.plot = function (o) {
+    var S = L.plotScales(o), s = '', x = o.x || 0, y = o.y || 0, w = o.w || 360, h = o.h || 220;
+    var cx = function (v) { return L.clamp(S.sx(v), S.left, S.right); }, cy = function (v) { return L.clamp(S.sy(v), S.top, S.bottom); };
+    if (o.title) s += L.text(x + w / 2, y + 15, o.title, { anchor: 'middle', size: 13, weight: 600 });
+    L.ticks(S.yd[0], S.yd[1], 5).forEach(function (t) {
+      s += L.line(S.left, S.sy(t), S.right, S.sy(t), { color: '#e4e7eb', width: 1 }) +
+        L.text(S.left - 5, S.sy(t), L.fmt(t, 3), { anchor: 'end', size: 10, baseline: 'middle', color: '#616e7c' });
+    });
+    L.ticks(S.xd[0], S.xd[1], 6).forEach(function (t) {
+      s += L.line(S.sx(t), S.bottom, S.sx(t), S.bottom + 4, { color: '#52606d', width: 1 }) +
+        L.text(S.sx(t), S.bottom + 15, L.fmt(t, 3), { anchor: 'middle', size: 10, color: '#616e7c' });
+    });
+    s += L.line(S.left, S.bottom, S.right, S.bottom, { color: '#52606d', width: 1 }) + L.line(S.left, S.top, S.left, S.bottom, { color: '#52606d', width: 1 });
+    if (o.xLabel) s += L.text((S.left + S.right) / 2, y + h - 6, o.xLabel, { anchor: 'middle', size: 12 });
+    if (o.yLabel) s += L.text(x + 12, (S.top + S.bottom) / 2, o.yLabel, { anchor: 'middle', size: 12, rotate: -90 });
+    (o.hlines || []).forEach(function (r) {
+      if (!isFinite(r.y) || r.y < S.yd[0] || r.y > S.yd[1]) return;
+      s += L.line(S.left, S.sy(r.y), S.right, S.sy(r.y), { color: r.color || '#D55E00', dash: '5 3' });
+      if (r.label) s += L.text(S.right - 2, S.sy(r.y) - 4, r.label, { anchor: 'end', size: 11, color: r.color || '#D55E00' });
+    });
+    (o.vlines || []).forEach(function (r) {
+      if (!isFinite(r.x) || r.x < S.xd[0] || r.x > S.xd[1]) return;
+      s += L.line(S.sx(r.x), S.top, S.sx(r.x), S.bottom, { color: r.color || '#D55E00', dash: '5 3' });
+      if (r.label) s += L.text(S.sx(r.x) + 4, S.top + 10, r.label, { size: 11, color: r.color || '#D55E00' });
+    });
+    (o.series || []).forEach(function (sr, i) {
+      var col = sr.color || L.color(i);
+      var pts = (sr.points || []).map(function (p) {
+        return isFinite(p[0]) && isFinite(p[1]) && p[1] >= S.yd[0] - 1e-12 && p[1] <= S.yd[1] + 1e-12 ? [S.sx(p[0]), S.sy(p[1])] : [NaN, NaN];
+      });
+      if (sr.line !== false) s += L.polyline(pts, { color: col, width: sr.width || 2, dash: sr.dash });
+      if (sr.dots) pts.forEach(function (p) { if (isFinite(p[0])) s += L.circle(p[0], p[1], 3, { fill: col }); });
+    });
+    (o.markers || []).forEach(function (m) {
+      if (!isFinite(m.x) || !isFinite(m.y)) return;
+      s += L.circle(cx(m.x), cy(m.y), m.r || 5, { fill: m.color || '#D55E00', stroke: '#ffffff', width: 1.5 });
+      if (m.label) s += L.text(cx(m.x) + 8, cy(m.y) - 8, m.label, { size: 11, color: m.color || '#D55E00', weight: 600 });
+    });
+    var labeled = (o.series || []).filter(function (sr) { return sr.label; });
+    if (labeled.length && o.legend !== false) {
+      s += L.legend(S.left + 10, S.top + 10, (o.series || []).map(function (sr, i) { return { label: sr.label || '', color: sr.color || L.color(i) }; }).filter(function (it) { return it.label; }));
+    }
+    return s;
+  };
+
+  return L;
+})();
+
+</script>
+<script>
+// ---------- helpers ----------
+function safeLog2(x) {
+  return x <= 0 ? 0 : Math.log2(x);
+}
+
+// Normalize weights into a probability vector; fall back to uniform if all zero.
+function normalizeWeights(w) {
+  const n = w.length;
+  let s = 0;
+  for (let i = 0; i < n; i++) {
+    const v = Number(w[i]);
+    s += (isFinite(v) && v > 0) ? v : 0;
+  }
+  if (s <= 0) {
+    return L.range(n).map(() => 1 / n);
+  }
+  return w.map(v => {
+    const x = Number(v);
+    return (isFinite(x) && x > 0) ? x / s : 0;
+  });
+}
+
+// ---------- compute ----------
+function compute(s) {
+  const n = Math.max(1, Math.min(6, Math.round(Number(s.n) || 1)));
+  let w = Array.isArray(s.w) ? s.w.slice(0, n) : [];
+  while (w.length < n) w.push(0);
+  w = w.map(v => {
+    const x = Number(v);
+    return (isFinite(x) && x > 0) ? x : 0;
+  });
+
+  const p = normalizeWeights(w);
+  const contrib = p.map(pi => (pi <= 0 ? 0 : -pi * safeLog2(pi)));
+  let H = 0;
+  for (let i = 0; i < contrib.length; i++) H += contrib[i];
+  if (!isFinite(H)) H = 0;
+
+  const log2n = safeLog2(n);
+  const uniform = p.map(() => 1 / n);
+  const uniformContrib = uniform.map(pi => -pi * safeLog2(pi));
+
+  // how far from uniform (max |p_i - 1/n|)
+  let dev = 0;
+  for (let i = 0; i < n; i++) dev = Math.max(dev, Math.abs(p[i] - 1 / n));
+
+  const maxContribIdx = L.argmax(contrib);
+  const sumP = L.sum(p);
+
+  return {
+    n: n,
+    w: w,
+    p: p,
+    contrib: contrib,
+    H: H,
+    log2n: log2n,
+    uniform: uniform,
+    uniformContrib: uniformContrib,
+    dev: dev,
+    maxContribIdx: maxContribIdx,
+    sumP: sumP,
+    isUniform: dev < 1e-9,
+    isCertain: p.some(pi => pi > 1 - 1e-9)
+  };
+}
+
+// ---------- render ----------
+function render(s, r) {
+  const w = 740, h = 360;
+  const n = r.n;
+  const padL = 60, padR = 20, padT = 46, padB = 60;
+  const gap = 34;
+  const panelW = (w - padL - padR - gap) / 2;
+  const panelH = h - padT - padB;
+
+  const leftX = padL, rightX = padL + panelW + gap;
+  const topY = padT;
+
+  const colors = L.range(n).map(i => L.color(i));
+
+  // ---- left panel: probabilities ----
+  const maxP = Math.max(1 / n, L.max(r.p), 1e-9);
+  const leftBars = L.bars({
+    x: leftX, y: topY, w: panelW, h: panelH,
+    values: r.p,
+    labels: L.range(n).map(i => "p" + (i + 1)),
+    title: "probabilities $p_i$",
+    yLabel: "probability",
+    min: 0, max: maxP,
+    colors: colors,
+    highlight: r.maxContribIdx,
+    fmt: v => L.fmt(v, 3),
+    refLines: [{ value: 1 / n, label: "1/n = " + L.fmt(1 / n, 3) }]
+  });
+
+  // ---- right panel: contributions ----
+  const maxC = Math.max(L.max(r.contrib), L.max(r.uniformContrib), 1e-9);
+  const rightBars = L.bars({
+    x: rightX, y: topY, w: panelW, h: panelH,
+    values: r.contrib,
+    labels: L.range(n).map(i => "-p" + (i + 1) + " log2 p" + (i + 1)),
+    title: "contributions $-p_i \\log_2 p_i$",
+    yLabel: "bits",
+    min: 0, max: maxC,
+    colors: colors.map(c => "#2e8b57"),
+    highlight: r.maxContribIdx,
+    fmt: v => L.fmt(v, 3),
+    refLines: [{ value: r.log2n, label: "log2 n = " + L.fmt(r.log2n, 3) }]
+  });
+
+  // ---- header text ----
+  const head = L.text(w / 2, 22,
+    "H = " + L.fmt(r.H, 4) + " bits    |    log2 n = " + L.fmt(r.log2n, 4) + " bits    |    n = " + n,
+    { size: 15, anchor: "middle", weight: "bold", color: "#1a1a1a" });
+
+  const foot = L.text(w / 2, h - 16,
+    "sum p_i = " + L.fmt(r.sumP, 4) + "    |    sum of contributions = " + L.fmt(L.sum(r.contrib), 4),
+    { size: 13, anchor: "middle", color: "#444" });
+
+  return L.svg(w, h, head + leftBars + rightBars + foot);
+}
+
+// ---------- show ----------
+function show(s, r) {
+  const n = r.n;
+  const rows = [];
+  rows.push({
+    label: "number of outcomes n",
+    value: n,
+    digits: 0,
+    note: "length of the probability vector"
+  });
+  rows.push({
+    label: "probabilities p_i",
+    value: r.p,
+    digits: 4,
+    note: "weights normalized so they sum to 1",
+    colLabels: L.range(n).map(i => "p" + (i + 1))
+  });
+  rows.push({
+    label: "contributions -p_i log2 p_i",
+    value: r.contrib,
+    digits: 4,
+    note: "each outcome's share of the entropy, in bits",
+    colLabels: L.range(n).map(i => "c" + (i + 1)),
+    highlight: r.maxContribIdx
+  });
+  rows.push({
+    label: "total entropy H",
+    value: r.H,
+    digits: 4,
+    note: "sum of the contributions; 0 bits means certainty",
+    highlight: 0
+  });
+  rows.push({
+    label: "uniform reference log2 n",
+    value: r.log2n,
+    digits: 4,
+    note: "maximum possible H for this n"
+  });
+  rows.push({
+    label: "max |p_i - 1/n|",
+    value: r.dev,
+    digits: 4,
+    note: "0 exactly when the distribution is uniform"
+  });
+  return rows;
+}
+
+// ---------- checks ----------
+function checks(s, r) {
+  const out = [];
+  const n = r.n;
+
+  out.push({
+    name: "probabilities sum to 1",
+    pass: Math.abs(r.sumP - 1) < 1e-9,
+    detail: "sum p_i = " + L.fmt(r.sumP, 6)
+  });
+
+  out.push({
+    name: "H >= 0",
+    pass: r.H >= -1e-9,
+    detail: "H = " + L.fmt(r.H, 6) + " bits"
+  });
+
+  out.push({
+    name: "H = 0 iff exactly one p_i = 1",
+    pass: (Math.abs(r.H) < 1e-9) === r.isCertain,
+    detail: "H = " + L.fmt(r.H, 6) + ", certain = " + r.isCertain
+  });
+
+  out.push({
+    name: "H <= log2 n, equality iff uniform",
+    pass: (r.H <= r.log2n + 1e-9) && ((Math.abs(r.H - r.log2n) < 1e-9) === r.isUniform),
+    detail: "H = " + L.fmt(r.H, 6) + ", log2 n = " + L.fmt(r.log2n, 6) + ", uniform = " + r.isUniform
+  });
+
+  out.push({
+    name: "sum of contributions equals H",
+    pass: Math.abs(L.sum(r.contrib) - r.H) < 1e-9,
+    detail: "sum c_i = " + L.fmt(L.sum(r.contrib), 6) + ", H = " + L.fmt(r.H, 6)
+  });
+
+  let zeroOk = true;
+  for (let i = 0; i < n; i++) {
+    if (r.p[i] <= 0 && Math.abs(r.contrib[i]) > 1e-12) zeroOk = false;
+  }
+  out.push({
+    name: "zero probabilities contribute exactly 0",
+    pass: zeroOk,
+    detail: "0 log2 0 treated as 0"
+  });
+
+  return out;
+}
+</script>
+<script>
+/* Paper to Playground - generic page runtime (DOM glue).
+ * Builds the controls declared in the page spec, keeps the learner's state,
+ * and on every change calls the generated pure functions:
+ *   compute(state) -> result         (all numbers shown on the page)
+ *   render(state, result) -> SVG     (the visual)
+ *   show(state, result) -> [items]   (intermediate values)
+ *   checks(state, result) -> [items] (live invariant checks)
+ * Each call is isolated so one failure is reported without breaking the rest.
+ * This file is generic: it contains no paper-specific content.
+ */
+(function () {
+  'use strict';
+  var specEl = document.getElementById('p2p-spec');
+  var SPEC = specEl ? JSON.parse(specEl.textContent) : { controls: [], explorations: [] };
+  var CONTROLS = SPEC.controls || [];
+  var state = {};
+
+  function $(id) { return document.getElementById(id); }
+  function el(tag, cls, html) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (html != null) e.innerHTML = html;
+    return e;
+  }
+  function esc(s) { return L.esc(s == null ? '' : s); }
+  function decimalsOf(step) {
+    var s = String(step == null ? 1 : step);
+    return s.indexOf('.') >= 0 ? s.split('.')[1].length : 0;
+  }
+  function fmtControl(c, v) { return L.fmt(Number(v), Math.max(decimalsOf(c.step), 0)); }
+
+  // ------------------------------------------------------------ dimensions
+  function dimValue(d, fallback) {
+    if (typeof d === 'number') return Math.max(1, Math.round(d));
+    if (typeof d === 'string' && state[d] != null && isFinite(Number(state[d]))) return Math.max(1, Math.round(Number(state[d])));
+    return fallback;
+  }
+  function fillValue(c) { return c.fill != null ? Number(c.fill) : 0; }
+  function resizeVector(v, n, fill) {
+    v = Array.isArray(v) ? v.slice(0, n) : [];
+    while (v.length < n) v.push(fill);
+    return v.map(function (x) { return isFinite(Number(x)) ? Number(x) : fill; });
+  }
+  function resizeMatrix(M, r, c, fill) {
+    M = Array.isArray(M) ? M.slice(0, r) : [];
+    while (M.length < r) M.push([]);
+    return M.map(function (row) { return resizeVector(row, c, fill); });
+  }
+  function conform(c) {
+    if (c.type === 'vector') {
+      var n = dimValue(c.length, Array.isArray(c.value) ? c.value.length : 3);
+      state[c.id] = resizeVector(state[c.id], n, fillValue(c));
+    } else if (c.type === 'matrix') {
+      var r0 = Array.isArray(c.value) ? c.value.length : 2, c0 = r0 && Array.isArray(c.value[0]) ? c.value[0].length : 2;
+      state[c.id] = resizeMatrix(state[c.id], dimValue(c.rows, r0), dimValue(c.cols, c0), fillValue(c));
+    }
+  }
+  function conformAll() { CONTROLS.forEach(conform); }
+  function dependsOn(c, id) { return c.length === id || c.rows === id || c.cols === id; }
+
+  function defaults() {
+    var s = {};
+    CONTROLS.forEach(function (c) { s[c.id] = L.copy(c.value); });
+    return s;
+  }
+  function labelOf(c) { return c.labelHtml || esc(c.label || c.id); }
+  function itemLabel(labels, i, fallback) { return labels && labels[i] != null ? esc(labels[i]) : fallback; }
+
+  // -------------------------------------------------------------- controls
+  function numberInput(c, value, onValue, title) {
+    var inp = el('input', 'p2p-num');
+    inp.type = 'number';
+    if (c.min != null) inp.min = c.min;
+    if (c.max != null) inp.max = c.max;
+    inp.step = c.step != null ? c.step : 'any';
+    inp.value = value;
+    if (title) inp.title = title;
+    inp.addEventListener('input', function () {
+      var v = parseFloat(inp.value);
+      var ok = isFinite(v) && (c.min == null || v >= c.min) && (c.max == null || v <= c.max);
+      inp.classList.toggle('p2p-invalid', !ok);
+      if (ok) onValue(v);
+    });
+    inp.addEventListener('change', function () {
+      var v = parseFloat(inp.value);
+      if (!isFinite(v)) v = Number(value);
+      if (c.min != null) v = Math.max(c.min, v);
+      if (c.max != null) v = Math.min(c.max, v);
+      inp.value = v;
+      inp.classList.remove('p2p-invalid');
+      onValue(v);
+    });
+    return inp;
+  }
+  function rangeInput(c, value, onValue, readout) {
+    var inp = el('input', 'p2p-range');
+    inp.type = 'range';
+    inp.min = c.min != null ? c.min : 0;
+    inp.max = c.max != null ? c.max : 1;
+    inp.step = c.step != null ? c.step : 'any';
+    inp.value = value;
+    inp.addEventListener('input', function () {
+      var v = parseFloat(inp.value);
+      if (readout) readout.textContent = fmtControl(c, v);
+      onValue(v);
+    });
+    return inp;
+  }
+
+  function buildControl(c) {
+    var box = el('div', 'p2p-control p2p-control-' + c.type);
+    box.setAttribute('data-control', c.id);
+    var id = 'p2p-c-' + c.id;
+    var v = state[c.id];
+    if (c.type === 'range' || c.type === 'number') {
+      var head = el('div', 'p2p-control-head');
+      var lab = el('label', 'p2p-label', labelOf(c));
+      lab.htmlFor = id;
+      head.appendChild(lab);
+      var inp;
+      if (c.type === 'range') {
+        var out = el('output', 'p2p-readout', esc(fmtControl(c, v)));
+        head.appendChild(out);
+        inp = rangeInput(c, v, function (x) { setValue(c, x); }, out);
+      } else {
+        inp = numberInput(c, v, function (x) { setValue(c, x); });
+      }
+      inp.id = id;
+      box.appendChild(head);
+      box.appendChild(inp);
+    } else if (c.type === 'toggle') {
+      var tl = el('label', 'p2p-toggle');
+      var cb = el('input');
+      cb.type = 'checkbox';
+      cb.id = id;
+      cb.checked = !!v;
+      cb.addEventListener('change', function () { setValue(c, cb.checked); });
+      tl.appendChild(cb);
+      tl.appendChild(el('span', 'p2p-label', labelOf(c)));
+      box.appendChild(tl);
+    } else if (c.type === 'select') {
+      var sl = el('label', 'p2p-label', labelOf(c));
+      sl.htmlFor = id;
+      var sel = el('select', 'p2p-select');
+      sel.id = id;
+      (c.options || []).forEach(function (o) {
+        var ov = typeof o === 'object' ? o.value : o, ol = typeof o === 'object' ? (o.label != null ? o.label : o.value) : o;
+        var opt = el('option', null, esc(ol));
+        opt.value = JSON.stringify(ov);
+        if (JSON.stringify(ov) === JSON.stringify(v)) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      sel.addEventListener('change', function () { setValue(c, JSON.parse(sel.value)); });
+      box.appendChild(sl);
+      box.appendChild(sel);
+    } else if (c.type === 'vector') {
+      box.appendChild(el('div', 'p2p-label', labelOf(c)));
+      var list = el('div', 'p2p-vector');
+      var useSlider = c.widget ? c.widget === 'slider' : (c.min != null && c.max != null);
+      v.forEach(function (x, i) {
+        var row = el('div', 'p2p-vector-item');
+        var name = itemLabel(c.labels, i, String(i + 1));
+        row.appendChild(el('span', 'p2p-vector-name', name));
+        var setI = function (val) { var arr = state[c.id].slice(); arr[i] = val; setValue(c, arr); };
+        if (useSlider) {
+          var ro = el('output', 'p2p-readout', esc(fmtControl(c, x)));
+          var r = rangeInput(c, x, setI, ro);
+          r.setAttribute('aria-label', (c.label || c.id) + ' ' + (c.labels && c.labels[i] != null ? c.labels[i] : i + 1));
+          row.appendChild(r);
+          row.appendChild(ro);
+        } else {
+          var n = numberInput(c, x, setI);
+          n.setAttribute('aria-label', (c.label || c.id) + ' ' + (i + 1));
+          row.appendChild(n);
+        }
+        list.appendChild(row);
+      });
+      box.appendChild(list);
+    } else if (c.type === 'matrix') {
+      box.appendChild(el('div', 'p2p-label', labelOf(c)));
+      var table = el('table', 'p2p-matrix-input');
+      if (c.colLabels) {
+        var hr = el('tr');
+        hr.appendChild(el('th'));
+        v[0].forEach(function (_, j) { hr.appendChild(el('th', null, itemLabel(c.colLabels, j, ''))); });
+        table.appendChild(hr);
+      }
+      v.forEach(function (rowv, i) {
+        var tr = el('tr');
+        tr.appendChild(el('th', null, itemLabel(c.rowLabels, i, c.colLabels ? String(i + 1) : '')));
+        rowv.forEach(function (x, j) {
+          var td = el('td');
+          var n = numberInput(c, x, function (val) {
+            var M = L.copy(state[c.id]); M[i][j] = val; setValue(c, M);
+          }, (c.label || c.id) + ' [' + (i + 1) + ',' + (j + 1) + ']');
+          n.setAttribute('aria-label', (c.label || c.id) + ' row ' + (i + 1) + ' column ' + (j + 1));
+          td.appendChild(n);
+          tr.appendChild(td);
+        });
+        table.appendChild(tr);
+      });
+      box.appendChild(table);
+    }
+    if (c.help) box.appendChild(el('div', 'p2p-help', c.helpHtml || esc(c.help)));
+    return box;
+  }
+
+  function buildControls() {
+    var host = $('p2p-controls');
+    if (!host) return;
+    host.innerHTML = '';
+    CONTROLS.forEach(function (c) { host.appendChild(buildControl(c)); });
+  }
+
+  function setValue(c, v) {
+    state[c.id] = v;
+    var dependents = CONTROLS.filter(function (d) { return dependsOn(d, c.id); });
+    if (dependents.length) {
+      conformAll();
+      dependents.forEach(function (d) {
+        var old = document.querySelector('[data-control="' + d.id + '"]');
+        if (old) old.parentNode.replaceChild(buildControl(d), old);
+      });
+    }
+    update();
+  }
+
+  // -------------------------------------------------------------- outputs
+  function cellText(x, digits) { return typeof x === 'number' ? L.fmt(x, digits) : esc(x); }
+  function valueHtml(it) {
+    var v = it.value, d = it.digits != null ? it.digits : 3;
+    if (Array.isArray(v) && v.length && Array.isArray(v[0])) {
+      var h = '<table class="p2p-matrix">';
+      if (it.colLabels) h += '<tr><th></th>' + v[0].map(function (_, j) { return '<th>' + itemLabel(it.colLabels, j, '') + '</th>'; }).join('') + '</tr>';
+      v.forEach(function (row, i) {
+        h += '<tr><th>' + itemLabel(it.rowLabels, i, '') + '</th>' + row.map(function (x) { return '<td>' + cellText(x, d) + '</td>'; }).join('') + '</tr>';
+      });
+      return h + '</table>';
+    }
+    if (Array.isArray(v)) {
+      var t = '<table class="p2p-matrix p2p-vector-out">';
+      if (it.colLabels) t += '<tr>' + v.map(function (_, j) { return '<th>' + itemLabel(it.colLabels, j, '') + '</th>'; }).join('') + '</tr>';
+      return t + '<tr>' + v.map(function (x) { return '<td>' + cellText(x, d) + '</td>'; }).join('') + '</tr></table>';
+    }
+    return '<span class="p2p-scalar">' + cellText(v, d) + '</span>';
+  }
+  function showError(where, err) {
+    var box = $('p2p-error');
+    if (!box) return;
+    box.hidden = false;
+    box.appendChild(el('div', null, '<strong>' + esc(where) + ' error:</strong> ' + esc(err && err.message ? err.message : err)));
+  }
+
+  function update() {
+    var errBox = $('p2p-error');
+    if (errBox) { errBox.innerHTML = ''; errBox.hidden = true; }
+    if (typeof window.compute !== 'function') { showError('Setup', 'interactive code did not load'); return; }
+    var result;
+    try { result = window.compute(L.copy(state)); } catch (e) { showError('compute', e); return; }
+    try {
+      var vis = $('p2p-visual');
+      if (vis && typeof window.render === 'function') vis.innerHTML = window.render(L.copy(state), result);
+    } catch (e) { showError('render', e); }
+    try {
+      var vals = $('p2p-values');
+      if (vals && typeof window.show === 'function') {
+        var items = window.show(L.copy(state), result) || [];
+        vals.innerHTML = items.map(function (it) {
+          return '<div class="p2p-value' + (it.highlight ? ' p2p-value-hl' : '') + '"><div class="p2p-value-label">' + esc(it.label) + '</div>' +
+            '<div class="p2p-value-body">' + valueHtml(it) + '</div>' + (it.note ? '<div class="p2p-value-note">' + esc(it.note) + '</div>' : '') + '</div>';
+        }).join('');
+      }
+    } catch (e) { showError('values', e); }
+    try {
+      var chk = $('p2p-checks');
+      if (chk && typeof window.checks === 'function') {
+        var cs = window.checks(L.copy(state), result) || [];
+        chk.innerHTML = cs.map(function (c) {
+          return '<li class="' + (c.pass ? 'p2p-pass' : 'p2p-fail') + '"><span class="p2p-mark" aria-hidden="true">' + (c.pass ? '✓' : '✗') + '</span> ' +
+            '<span class="p2p-check-name">' + esc(c.name) + '</span>' + (c.detail != null && c.detail !== '' ? ' <span class="p2p-check-detail">' + esc(c.detail) + '</span>' : '') + '</li>';
+        }).join('');
+      }
+    } catch (e) { showError('checks', e); }
+  }
+
+  // ---------------------------------------------------------- explorations
+  function applyPreset(i) {
+    var ex = (SPEC.explorations || [])[i];
+    if (!ex || !ex.preset) return;
+    state = defaults();
+    Object.keys(ex.preset).forEach(function (k) { if (k in state) state[k] = L.copy(ex.preset[k]); });
+    conformAll();
+    buildControls();
+    update();
+    document.querySelectorAll('.p2p-exploration').forEach(function (card, j) { card.classList.toggle('p2p-active', j === i); });
+    var pg = $('p2p-playground');
+    if (pg && pg.scrollIntoView) pg.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function init() {
+    state = defaults();
+    conformAll();
+    buildControls();
+    document.querySelectorAll('[data-p2p-preset]').forEach(function (btn) {
+      btn.addEventListener('click', function () { applyPreset(Number(btn.getAttribute('data-p2p-preset'))); });
+    });
+    var reset = $('p2p-reset');
+    if (reset) reset.addEventListener('click', function () {
+      state = defaults(); conformAll(); buildControls(); update();
+      document.querySelectorAll('.p2p-exploration').forEach(function (card) { card.classList.remove('p2p-active'); });
+    });
+    update();
+    window.P2P = { get state() { return L.copy(state); }, update: update, applyPreset: applyPreset };
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,1155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scaled Dot-Product Attention (Equation 1)</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --card: #ffffff;
+    --ink: #1f2933;
+    --muted: #52606d;
+    --line: #e4e7eb;
+    --accent: #0b5cad;
+    --accent-soft: #e8f1fb;
+    --ok: #1a7f37;
+    --bad: #c62828;
+    --warn-soft: #fff6e5;
+    --warn: #b26a00;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  header.hero { background: var(--card); border-bottom: 1px solid var(--line); padding: 28px 16px 20px; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+  .kicker { margin: 0; color: var(--accent); font-weight: 600; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; }
+  h1 { margin: 6px 0 8px; font-size: clamp(26px, 4vw, 36px); line-height: 1.2; }
+  .hook { margin: 0 0 10px; font-size: 18px; color: var(--muted); max-width: 820px; }
+  .meta { margin: 0; font-size: 14px; color: var(--muted); }
+  nav.toc { position: sticky; top: 0; z-index: 5; background: rgba(246,247,249,.95); border-bottom: 1px solid var(--line); }
+  nav.toc .wrap { display: flex; gap: 6px 18px; flex-wrap: wrap; padding-top: 8px; padding-bottom: 8px; font-size: 14px; }
+  nav.toc a { color: var(--muted); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); }
+  main { padding: 20px 0 40px; }
+  section.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px 24px; margin: 0 0 18px; }
+  h2 { margin: 0 0 12px; font-size: 22px; }
+  h3 { margin: 18px 0 8px; font-size: 17px; }
+  p { margin: 0 0 10px; }
+  .equations { margin: 14px 0 4px; }
+  .equation { background: var(--accent-soft); border-radius: 8px; padding: 10px 14px; margin: 0 0 10px; }
+  .equation math[display="block"] { font-size: 1.25em; margin: 4px 0; }
+  .equation .caption { font-size: 14px; color: var(--muted); margin: 4px 0 0; }
+  math { font-size: 1.08em; }
+  table.symbols { border-collapse: collapse; width: 100%; font-size: 15px; }
+  table.symbols th, table.symbols td { border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+  table.symbols th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .03em; }
+  table.symbols td.sym { white-space: nowrap; width: 1%; font-size: 1.1em; }
+
+  /* playground */
+  .pg-grid { display: grid; grid-template-columns: minmax(250px, 340px) 1fr; gap: 20px; align-items: start; }
+  .pg-controls { background: #fafbfc; border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
+  .pg-controls h3, .pg-outputs h3 { margin-top: 0; }
+  .pg-visual { min-width: 0; }
+  #p2p-visual { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 8px; overflow-x: auto; }
+  #p2p-visual svg { display: block; margin: 0 auto; height: auto; }
+  .pg-visual .caption { font-size: 14px; color: var(--muted); margin-top: 8px; }
+  .pg-outputs { display: grid; grid-template-columns: 1fr minmax(240px, 320px); gap: 20px; margin-top: 18px; }
+  .p2p-control { margin: 0 0 14px; }
+  .p2p-control-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .p2p-label { font-weight: 600; font-size: 14px; }
+  .p2p-readout { font-variant-numeric: tabular-nums; font-size: 14px; color: var(--accent); min-width: 3.5em; text-align: right; }
+  .p2p-range { width: 100%; accent-color: var(--accent); }
+  .p2p-num { width: 4.8em; padding: 3px 4px; font: inherit; font-size: 14px; border: 1px solid #cbd2d9; border-radius: 4px; }
+  .p2p-num.p2p-invalid { border-color: var(--bad); background: #fdecea; }
+  .p2p-select { font: inherit; font-size: 14px; padding: 3px 6px; margin-top: 4px; width: 100%; }
+  .p2p-toggle { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+  .p2p-toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
+  .p2p-help { font-size: 13px; color: var(--muted); margin-top: 3px; }
+  .p2p-vector { display: grid; gap: 4px; margin-top: 4px; }
+  .p2p-vector-item { display: grid; grid-template-columns: minmax(2.2em, auto) 1fr auto; gap: 8px; align-items: center; font-size: 14px; }
+  .p2p-vector-name { color: var(--muted); }
+  table.p2p-matrix-input { border-collapse: collapse; margin-top: 4px; }
+  table.p2p-matrix-input th { font-weight: 500; font-size: 13px; color: var(--muted); padding: 0 4px; }
+  table.p2p-matrix-input td { padding: 2px; }
+  #p2p-reset, .p2p-try { font: inherit; font-size: 14px; border-radius: 6px; cursor: pointer; padding: 6px 12px; }
+  #p2p-reset { background: #fff; border: 1px solid #cbd2d9; color: var(--ink); }
+  .p2p-try { background: var(--accent); border: 1px solid var(--accent); color: #fff; }
+  .p2p-try:hover { filter: brightness(1.1); }
+  #p2p-values { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .p2p-value { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: #fff; min-width: 0; overflow-x: auto; }
+  .p2p-value-hl { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+  .p2p-value-label { font-size: 13px; color: var(--muted); font-weight: 600; }
+  .p2p-value-note { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .p2p-scalar { font-size: 20px; font-variant-numeric: tabular-nums; }
+  table.p2p-matrix { border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 14px; margin-top: 2px; }
+  table.p2p-matrix td { border: 1px solid var(--line); padding: 2px 7px; text-align: right; }
+  table.p2p-matrix th { font-weight: 500; color: var(--muted); font-size: 12px; padding: 1px 5px; }
+  #p2p-checks { list-style: none; margin: 0; padding: 0; font-size: 14px; }
+  #p2p-checks li { padding: 6px 8px; border-radius: 6px; margin-bottom: 6px; }
+  #p2p-checks li.p2p-pass { background: #eaf6ec; }
+  #p2p-checks li.p2p-fail { background: #fdecea; }
+  .p2p-pass .p2p-mark { color: var(--ok); font-weight: 700; }
+  .p2p-fail .p2p-mark { color: var(--bad); font-weight: 700; }
+  .p2p-check-detail { display: block; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .p2p-error { background: #fdecea; color: var(--bad); border-radius: 8px; padding: 10px 12px; margin-top: 12px; font-size: 14px; }
+
+  /* explorations, caveat, grounding */
+  .explorations { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .p2p-exploration { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+  .p2p-exploration.p2p-active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .p2p-exploration h3 { margin-top: 0; }
+  .p2p-exploration dl { margin: 8px 0 12px; }
+  .p2p-exploration dt { font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: .03em; color: var(--accent); margin-top: 8px; }
+  .p2p-exploration dd { margin: 2px 0 0; }
+  section.caveat { background: var(--warn-soft); border-color: #f3d9a4; }
+  section.caveat h2 { color: var(--warn); }
+  .ground-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 10px; }
+  .ground-grid > div { border-radius: 8px; padding: 12px 14px; }
+  .from-source { background: #eaf6ec; }
+  .ours { background: #f1f0fb; }
+  .ground-grid h3 { margin-top: 0; font-size: 15px; }
+  .ground-grid ul { margin: 0; padding-left: 20px; }
+  .disclaimer { font-size: 14px; color: var(--muted); border-left: 3px solid var(--line); padding-left: 10px; margin-top: 12px; }
+  details.excerpt { margin-top: 12px; font-size: 14px; }
+  details.excerpt blockquote { margin: 8px 0 0; padding: 10px 14px; background: #fafbfc; border-left: 3px solid var(--line); white-space: pre-wrap; }
+  footer { color: var(--muted); font-size: 13px; padding: 0 0 30px; }
+  code { background: #f0f2f4; padding: 1px 4px; border-radius: 4px; font-size: .92em; }
+
+  @media (max-width: 820px) {
+    .pg-grid, .pg-outputs, .explorations, .ground-grid { grid-template-columns: 1fr; }
+    section.card { padding: 18px 16px; }
+  }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <p class="kicker">Interactive explanation</p>
+    <h1>Scaled Dot-Product Attention (Equation 1)</h1>
+    <p class="hook">Edit tiny Q, K and V matrices and watch how dot products become attention weights and then a weighted average of the values.</p>
+    <p class="meta">Written for: Engineering undergraduate who knows matrix multiplication and dot products but has not studied Transformers.</p>
+  </div>
+</header>
+<nav class="toc" aria-label="Sections">
+  <div class="wrap">
+    <a href="#idea">1. The idea</a>
+    <a href="#symbols">2. Symbols</a>
+    <a href="#p2p-playground">3. Playground</a>
+    <a href="#explore">4. Guided explorations</a>
+    <a href="#caveat">5. Caveat</a>
+    <a href="#grounding">6. Source grounding</a>
+  </div>
+</nav>
+<main class="wrap">
+  <section id="idea" class="card">
+    <h2>1. The idea</h2>
+    <p>Attention answers a simple question: for each query, which keys look similar, and how much should I copy from their values? Similarity is measured by a dot product <math aria-label="q \cdot k"><mrow><mi>q</mi><mo>⋅</mo><mi>k</mi></mrow></math>. A big dot product means the query and key point in similar directions.</p><p>Raw dot products can be large, and a softmax over large numbers becomes nearly one-hot with tiny gradients. Equation 1 therefore divides every score by <math aria-label="\sqrt{d_k}"><mrow><msqrt><mrow><msub><mi>d</mi><mi>k</mi></msub></mrow></msqrt></mrow></math> before the softmax. This keeps the scores in a range where the softmax is well behaved.</p><p>The softmax turns each row of scores into a probability distribution over the keys. Those weights are then used to take a weighted average of the value rows. So the output for a query is a blend of the values, with the blend determined by similarity.</p><p>Everything here is a toy: small matrices you type in by hand. No training, no learned parameters — just the forward computation of Equation 1.</p>
+    <h3>Why it matters</h3>
+    <p>Scaled dot-product attention is the core operation inside every Transformer block. Understanding the shape flow and the role of the <math aria-label="1/\sqrt{d_k}"><mrow><mn>1</mn><mo>/</mo><msqrt><mrow><msub><mi>d</mi><mi>k</mi></msub></mrow></msqrt></mrow></math> factor is the foundation for reading the rest of the architecture.</p>
+    <div class="equations"><div class="equation"><math display="block" aria-label="\mathrm{Attention}(Q,K,V) = \mathrm{softmax}\!\left(\frac{QK^{\top}}{\sqrt{d_k}}\right)V"><mrow><mi mathvariant="normal">Attention</mi><mo>(</mo><mi>Q</mi><mo>,</mo><mi>K</mi><mo>,</mo><mi>V</mi><mo>)</mo><mo>=</mo><mi mathvariant="normal">softmax</mi><mspace width="0em"></mspace><mrow><mo fence="true" stretchy="true">(</mo><mfrac><mrow><mi>Q</mi><msup><mi>K</mi><mrow><mo>⊤</mo></mrow></msup></mrow><mrow><msqrt><mrow><msub><mi>d</mi><mi>k</mi></msub></mrow></msqrt></mrow></mfrac><mo fence="true" stretchy="true">)</mo></mrow><mi>V</mi></mrow></math><p class="caption">Equation 1: scores are the dot products of queries with keys, scaled by <math aria-label="1/\sqrt{d_k}"><mrow><mn>1</mn><mo>/</mo><msqrt><mrow><msub><mi>d</mi><mi>k</mi></msub></mrow></msqrt></mrow></math>, softmaxed row-wise, then applied to the values.</p></div><div class="equation"><math display="block" aria-label="\mathrm{softmax}(z)_i = \frac{e^{z_i}}{\sum_j e^{z_j}}"><mrow><mi mathvariant="normal">softmax</mi><mo>(</mo><mi>z</mi><msub><mo>)</mo><mi>i</mi></msub><mo>=</mo><mfrac><mrow><msup><mi>e</mi><mrow><msub><mi>z</mi><mi>i</mi></msub></mrow></msup></mrow><mrow><munder><mo movablelimits="true">∑</mo><mi>j</mi></munder><msup><mi>e</mi><mrow><msub><mi>z</mi><mi>j</mi></msub></mrow></msup></mrow></mfrac></mrow></math><p class="caption">Softmax turns a row of scores into non-negative weights that sum to one.</p></div><div class="equation"><math display="block" aria-label="\mathrm{Var}(q \cdot k) = d_k"><mrow><mi mathvariant="normal">Var</mi><mo>(</mo><mi>q</mi><mo>⋅</mo><mi>k</mi><mo>)</mo><mo>=</mo><msub><mi>d</mi><mi>k</mi></msub></mrow></math><p class="caption">Footnote 4: if <math aria-label="q_i, k_i"><mrow><msub><mi>q</mi><mi>i</mi></msub><mo>,</mo><msub><mi>k</mi><mi>i</mi></msub></mrow></math> are independent with mean 0 and variance 1, the dot product has variance <math aria-label="d_k"><mrow><msub><mi>d</mi><mi>k</mi></msub></mrow></math> — hence the <math aria-label="1/\sqrt{d_k}"><mrow><mn>1</mn><mo>/</mo><msqrt><mrow><msub><mi>d</mi><mi>k</mi></msub></mrow></msqrt></mrow></math> scaling.</p></div></div>
+  </section>
+
+  <section id="symbols" class="card">
+    <h2>2. What the symbols mean</h2>
+    <table class="symbols"><thead><tr><th>Symbol</th><th>Meaning</th><th>In the playground</th></tr></thead><tbody><tr><td class="sym"><math aria-label="Q"><mrow><mi>Q</mi></mrow></math></td><td>matrix of queries, shape <math aria-label="n_q \times d_k"><mrow><msub><mi>n</mi><mi>q</mi></msub><mo>×</mo><msub><mi>d</mi><mi>k</mi></msub></mrow></math></td><td>the Q matrix editor</td></tr><tr><td class="sym"><math aria-label="K"><mrow><mi>K</mi></mrow></math></td><td>matrix of keys, shape <math aria-label="n_k \times d_k"><mrow><msub><mi>n</mi><mi>k</mi></msub><mo>×</mo><msub><mi>d</mi><mi>k</mi></msub></mrow></math></td><td>the K matrix editor</td></tr><tr><td class="sym"><math aria-label="V"><mrow><mi>V</mi></mrow></math></td><td>matrix of values, shape <math aria-label="n_k \times d_v"><mrow><msub><mi>n</mi><mi>k</mi></msub><mo>×</mo><msub><mi>d</mi><mi>v</mi></msub></mrow></math></td><td>the V matrix editor</td></tr><tr><td class="sym"><math aria-label="d_k"><mrow><msub><mi>d</mi><mi>k</mi></msub></mrow></math></td><td>dimension of queries and keys</td><td>the <math aria-label="d_k"><mrow><msub><mi>d</mi><mi>k</mi></msub></mrow></math> control</td></tr><tr><td class="sym"><math aria-label="d_v"><mrow><msub><mi>d</mi><mi>v</mi></msub></mrow></math></td><td>dimension of values</td><td>the <math aria-label="d_v"><mrow><msub><mi>d</mi><mi>v</mi></msub></mrow></math> control</td></tr><tr><td class="sym"><math aria-label="S"><mrow><mi>S</mi></mrow></math></td><td>raw scores <math aria-label="QK^{\top}"><mrow><mi>Q</mi><msup><mi>K</mi><mrow><mo>⊤</mo></mrow></msup></mrow></math></td><td>shown in the score heatmap when scaling is off</td></tr><tr><td class="sym"><math aria-label="A"><mrow><mi>A</mi></mrow></math></td><td>attention weights <math aria-label="\mathrm{softmax}(S/\sqrt{d_k})"><mrow><mi mathvariant="normal">softmax</mi><mo>(</mo><mi>S</mi><mo>/</mo><msqrt><mrow><msub><mi>d</mi><mi>k</mi></msub></mrow></msqrt><mo>)</mo></mrow></math></td><td>the weights heatmap</td></tr><tr><td class="sym"><math aria-label="O"><mrow><mi>O</mi></mrow></math></td><td>output <math aria-label="AV"><mrow><mi>A</mi><mi>V</mi></mrow></math>, shape <math aria-label="n_q \times d_v"><mrow><msub><mi>n</mi><mi>q</mi></msub><mo>×</mo><msub><mi>d</mi><mi>v</mi></msub></mrow></math></td><td>the output heatmap</td></tr></tbody></table>
+  </section>
+
+  <section id="p2p-playground" class="card">
+    <h2>3. Playground</h2>
+    <div class="pg-grid">
+      <div class="pg-controls">
+        <h3>Controls</h3>
+        <div id="p2p-controls"></div>
+        <button type="button" id="p2p-reset">Reset to defaults</button>
+      </div>
+      <div class="pg-visual">
+        <div id="p2p-visual" aria-live="polite"></div>
+        <p class="caption">Three heatmaps in a row: scaled scores <math aria-label="S/\sqrt{d_k}"><mrow><mi>S</mi><mo>/</mo><msqrt><mrow><msub><mi>d</mi><mi>k</mi></msub></mrow></msqrt></mrow></math> (or raw <math aria-label="S"><mrow><mi>S</mi></mrow></math> if scaling is off), attention weights <math aria-label="A"><mrow><mi>A</mi></mrow></math> with row sums printed on the right, and the output <math aria-label="O = AV"><mrow><mi>O</mi><mo>=</mo><mi>A</mi><mi>V</mi></mrow></math>. The inspected query row is outlined in each heatmap. Below, a bar chart shows the weights of that row over the keys.</p>
+      </div>
+    </div>
+    <div id="p2p-error" class="p2p-error" role="alert" hidden></div>
+    <div class="pg-outputs">
+      <div>
+        <h3>Intermediate values (computed live)</h3>
+        <div id="p2p-values"></div>
+      </div>
+      <div>
+        <h3>Live checks</h3>
+        <ul id="p2p-checks"></ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="explore" class="card">
+    <h2>4. Guided explorations</h2>
+    <div class="explorations"><article class="p2p-exploration"><h3>Exploration 1: Equal scores give uniform weights</h3><dl><dt>Change</dt><dd>Look at the weights heatmap and the bar chart without changing anything first, then try changing one entry of <math aria-label="K"><mrow><mi>K</mi></mrow></math>.</dd><dt>Observe</dt><dd>With all keys identical, every score is the same, so each weight is <math aria-label="1/3"><mrow><mn>1</mn><mo>/</mo><mn>3</mn></mrow></math> and the row sum is <math aria-label="1"><mrow><mn>1</mn></mrow></math>. The output is the plain average of the three value rows. Change one key entry and the weights shift toward the matching key.</dd><dt>Why</dt><dd>Softmax of equal scores is uniform: <math aria-label="e^{c}/\sum_j e^{c} = 1/n_k"><mrow><msup><mi>e</mi><mrow><mi>c</mi></mrow></msup><mo>/</mo><munder><mo movablelimits="true">∑</mo><mi>j</mi></munder><msup><mi>e</mi><mrow><mi>c</mi></mrow></msup><mo>=</mo><mn>1</mn><mo>/</mo><msub><mi>n</mi><mi>k</mi></msub></mrow></math>. The output is therefore the mean of the value rows.</dd></dl><button type="button" class="p2p-try" data-p2p-preset="0">Set up this exploration</button></article><article class="p2p-exploration"><h3>Exploration 2: A dominant score and the role of scaling</h3><dl><dt>Change</dt><dd>Turn the scaling toggle off and on, and watch the weights heatmap and the bar chart.</dd><dt>Observe</dt><dd>With scaling on, the first weight is large but not exactly <math aria-label="1"><mrow><mn>1</mn></mrow></math>. With scaling off, the raw score <math aria-label="16"><mrow><mn>16</mn></mrow></math> dominates and the first weight becomes essentially <math aria-label="1"><mrow><mn>1</mn></mrow></math>, so the output collapses onto the first value row.</dd><dt>Why</dt><dd>Dividing by <math aria-label="\sqrt{d_k}"><mrow><msqrt><mrow><msub><mi>d</mi><mi>k</mi></msub></mrow></msqrt></mrow></math> shrinks large dot products. Without it, the softmax saturates toward a one-hot distribution, which is exactly the small-gradient regime the paper warns about for large <math aria-label="d_k"><mrow><msub><mi>d</mi><mi>k</mi></msub></mrow></math>.</dd></dl><button type="button" class="p2p-try" data-p2p-preset="1">Set up this exploration</button></article></div>
+  </section>
+
+  <section id="caveat" class="card caveat">
+    <h2>5. Misconception: Softmax is over keys, not over queries</h2>
+    <p>The softmax in Equation 1 is applied row-wise to <math aria-label="QK^{\top}"><mrow><mi>Q</mi><msup><mi>K</mi><mrow><mo>⊤</mo></mrow></msup></mrow></math>, so each query gets its own distribution over the keys. Rows of <math aria-label="A"><mrow><mi>A</mi></mrow></math> sum to one; columns generally do not. Also note that scaling changes the sharpness of the weights but never changes their shape (number of rows and columns).</p>
+  </section>
+
+  <section id="grounding" class="card">
+    <h2>6. Source grounding</h2>
+    <p><strong>Paper:</strong> Attention Is All You Need (Vaswani et al., 2017) &mdash; <a href="https://arxiv.org/html/1706.03762v7">https://arxiv.org/html/1706.03762v7</a></p><p><strong>Relevant part:</strong> Section 3.2.1, Equation 1</p><div class="ground-grid"><div class="from-source"><h3>Supported by the source excerpt</h3><ul><li>The input consists of queries and keys of dimension <math aria-label="d_k"><mrow><msub><mi>d</mi><mi>k</mi></msub></mrow></math>, and values of dimension <math aria-label="d_v"><mrow><msub><mi>d</mi><mi>v</mi></msub></mrow></math>.</li><li>The dot products of the query with all keys are computed, each divided by <math aria-label="\sqrt{d_k}"><mrow><msqrt><mrow><msub><mi>d</mi><mi>k</mi></msub></mrow></msqrt></mrow></math>, and a softmax is applied to obtain the weights on the values.</li><li>The attention function is computed on a set of queries packed into a matrix <math aria-label="Q"><mrow><mi>Q</mi></mrow></math>, with keys and values packed into <math aria-label="K"><mrow><mi>K</mi></mrow></math> and <math aria-label="V"><mrow><mi>V</mi></mrow></math>.</li><li>The output is <math aria-label="\mathrm{softmax}(QK^{\top}/\sqrt{d_k})V"><mrow><mi mathvariant="normal">softmax</mi><mo>(</mo><mi>Q</mi><msup><mi>K</mi><mrow><mo>⊤</mo></mrow></msup><mo>/</mo><msqrt><mrow><msub><mi>d</mi><mi>k</mi></msub></mrow></msqrt><mo>)</mo><mi>V</mi></mrow></math> (Equation 1).</li><li>Dot-product attention is identical to this algorithm except for the scaling factor <math aria-label="1/\sqrt{d_k}"><mrow><mn>1</mn><mo>/</mo><msqrt><mrow><msub><mi>d</mi><mi>k</mi></msub></mrow></msqrt></mrow></math>.</li><li>For large <math aria-label="d_k"><mrow><msub><mi>d</mi><mi>k</mi></msub></mrow></math> the dot products grow large in magnitude, pushing the softmax into regions with extremely small gradients; scaling counteracts this.</li><li>Footnote 4: if components of <math aria-label="q"><mrow><mi>q</mi></mrow></math> and <math aria-label="k"><mrow><mi>k</mi></mrow></math> are independent with mean 0 and variance 1, then <math aria-label="q \cdot k"><mrow><mi>q</mi><mo>⋅</mo><mi>k</mi></mrow></math> has mean 0 and variance <math aria-label="d_k"><mrow><msub><mi>d</mi><mi>k</mi></msub></mrow></math>.</li></ul></div><div class="ours"><h3>Our examples and simplifications (not from the paper)</h3><ul><li>The specific toy matrices and their entries.</li><li>The choice to display scores, weights and output as heatmaps with a bar chart for one query row.</li><li>The two guided explorations (uniform keys, dominant key with scaling on/off).</li><li>The live checks on row sums and on <math aria-label="O = AV"><mrow><mi>O</mi><mo>=</mo><mi>A</mi><mi>V</mi></mrow></math>.</li></ul></div></div><p class="disclaimer">This page is a hand-editable toy of the forward computation in Equation 1. It does not train a Transformer and does not reproduce any experiment from the paper.</p><details class="excerpt"><summary>Source excerpt given to the generator</summary><blockquote>3.2.1 Scaled Dot-Product Attention. The attention used is called &quot;Scaled Dot-Product Attention&quot;. The input consists of queries and keys of dimension d_k, and values of dimension d_v. The dot products of the query with all keys are computed, each is divided by sqrt(d_k), and a softmax function is applied to obtain the weights on the values. In practice the attention function is computed on a set of queries simultaneously, packed together into a matrix Q; the keys and values are packed into matrices K and V. The matrix of outputs is computed as: Attention(Q, K, V) = softmax(Q K^T / sqrt(d_k)) V   (Equation 1). The two most commonly used attention functions are additive attention and dot-product (multiplicative) attention. Dot-product attention is identical to this algorithm except for the scaling factor 1/sqrt(d_k). Additive attention computes the compatibility function using a feed-forward network with a single hidden layer. The two are similar in theoretical complexity, but dot-product attention is faster and more space-efficient in practice because it can use optimized matrix multiplication. For small d_k the two mechanisms perform similarly, but additive attention outperforms dot-product attention without scaling for larger d_k. The authors suspect that for large d_k the dot products grow large in magnitude, pushing the softmax into regions where it has extremely small gradients; to counteract this, the dot products are scaled by 1/sqrt(d_k). Footnote 4: to illustrate why the dot products get large, assume the components of q and k are independent random variables with mean 0 and variance 1; then their dot product q . k = sum_{i=1}^{d_k} q_i k_i has mean 0 and variance d_k.</blockquote></details>
+  </section>
+</main>
+<footer class="wrap">Generated by paper-to-playground. All numbers on this page are computed live in your browser from the controls; nothing is loaded from the internet.</footer>
+<script id="p2p-spec" type="application/json">{"controls": [{"id": "nq", "type": "number", "label": "number of queries $n_q$", "min": 1.0, "max": 4.0, "step": 1.0, "value": 2.0, "labelHtml": "number of queries <math aria-label=\"n_q\"><mrow><msub><mi>n<\/mi><mi>q<\/mi><\/msub><\/mrow><\/math>"}, {"id": "nk", "type": "number", "label": "number of keys/values $n_k$", "min": 1.0, "max": 4.0, "step": 1.0, "value": 3.0, "labelHtml": "number of keys/values <math aria-label=\"n_k\"><mrow><msub><mi>n<\/mi><mi>k<\/mi><\/msub><\/mrow><\/math>"}, {"id": "dk", "type": "number", "label": "key dimension $d_k$", "min": 1.0, "max": 4.0, "step": 1.0, "value": 2.0, "labelHtml": "key dimension <math aria-label=\"d_k\"><mrow><msub><mi>d<\/mi><mi>k<\/mi><\/msub><\/mrow><\/math>"}, {"id": "dv", "type": "number", "label": "value dimension $d_v$", "min": 1.0, "max": 4.0, "step": 1.0, "value": 2.0, "labelHtml": "value dimension <math aria-label=\"d_v\"><mrow><msub><mi>d<\/mi><mi>v<\/mi><\/msub><\/mrow><\/math>"}, {"id": "scale", "type": "toggle", "label": "divide scores by $\\sqrt{d_k}$", "value": true, "labelHtml": "divide scores by <math aria-label=\"\\sqrt{d_k}\"><mrow><msqrt><mrow><msub><mi>d<\/mi><mi>k<\/mi><\/msub><\/mrow><\/msqrt><\/mrow><\/math>"}, {"id": "row", "type": "number", "label": "query row to inspect", "min": 0.0, "max": 3.0, "step": 1.0, "value": 0.0, "labelHtml": "query row to inspect"}, {"id": "Q", "type": "matrix", "label": "queries $Q$", "rows": "nq", "cols": "dk", "min": -3.0, "max": 3.0, "step": 0.5, "value": [[1.0, 0.0], [0.0, 1.0]], "rowLabels": ["q1", "q2"], "colLabels": ["d1", "d2"], "fill": 0, "labelHtml": "queries <math aria-label=\"Q\"><mrow><mi>Q<\/mi><\/mrow><\/math>"}, {"id": "K", "type": "matrix", "label": "keys $K$", "rows": "nk", "cols": "dk", "min": -3.0, "max": 3.0, "step": 0.5, "value": [[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]], "rowLabels": ["k1", "k2", "k3"], "colLabels": ["d1", "d2"], "fill": 0, "labelHtml": "keys <math aria-label=\"K\"><mrow><mi>K<\/mi><\/mrow><\/math>"}, {"id": "V", "type": "matrix", "label": "values $V$", "rows": "nk", "cols": "dv", "min": -3.0, "max": 3.0, "step": 0.5, "value": [[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]], "rowLabels": ["v1", "v2", "v3"], "colLabels": ["d1", "d2"], "fill": 0, "labelHtml": "values <math aria-label=\"V\"><mrow><mi>V<\/mi><\/mrow><\/math>"}], "explorations": [{"preset": {"nq": 1, "nk": 3, "dk": 2, "dv": 2, "scale": true, "row": 0, "Q": [[1, 0]], "K": [[1, 0], [1, 0], [1, 0]], "V": [[1, 0], [0, 1], [1, 1]]}}, {"preset": {"nq": 1, "nk": 3, "dk": 4, "dv": 2, "scale": true, "row": 0, "Q": [[2, 2, 2, 2]], "K": [[2, 2, 2, 2], [0, 0, 0, 0], [0, 0, 0, 0]], "V": [[1, 0], [0, 1], [1, 1]]}}]}</script>
+<script>
+/* Paper to Playground - generic helper library "L".
+ * Pure functions only (no DOM): math utilities, number formatting and SVG
+ * string builders. Loaded into every generated page and into the V8 checker,
+ * so generated compute()/render() code behaves identically in both places.
+ * This file is generic: it contains no paper-specific content.
+ */
+var L = (function () {
+  'use strict';
+  var L = {};
+
+  // ------------------------------------------------------------------ math
+  L.isNum = function (x) { return typeof x === 'number' && isFinite(x); };
+  L.range = function (n) { var a = []; for (var i = 0; i < n; i++) a.push(i); return a; };
+  L.linspace = function (a, b, n) {
+    if (n < 2) return [a];
+    var s = (b - a) / (n - 1);
+    return L.range(n).map(function (i) { return a + i * s; });
+  };
+  L.sum = function (a) { var s = 0; for (var i = 0; i < a.length; i++) s += a[i]; return s; };
+  L.mean = function (a) { return a.length ? L.sum(a) / a.length : NaN; };
+  L.max = function (a) { var m = -Infinity; for (var i = 0; i < a.length; i++) if (a[i] > m) m = a[i]; return m; };
+  L.min = function (a) { var m = Infinity; for (var i = 0; i < a.length; i++) if (a[i] < m) m = a[i]; return m; };
+  L.argmax = function (a) { var k = 0; for (var i = 1; i < a.length; i++) if (a[i] > a[k]) k = i; return k; };
+  L.argmin = function (a) { var k = 0; for (var i = 1; i < a.length; i++) if (a[i] < a[k]) k = i; return k; };
+  L.clamp = function (x, lo, hi) { return Math.min(hi, Math.max(lo, x)); };
+  L.round = function (x, d) { var f = Math.pow(10, d == null ? 3 : d); return Math.round(x * f) / f; };
+  L.log2 = function (x) { return Math.log(x) / Math.LN2; };
+  L.copy = function (x) { return JSON.parse(JSON.stringify(x)); };
+  L.zeros = function (r, c) {
+    if (c == null) return L.range(r).map(function () { return 0; });
+    return L.range(r).map(function () { return L.range(c).map(function () { return 0; }); });
+  };
+  L.dot = function (a, b) { var s = 0; for (var i = 0; i < a.length; i++) s += a[i] * b[i]; return s; };
+  L.transpose = function (A) {
+    if (!A.length) return [];
+    return A[0].map(function (_, j) { return A.map(function (row) { return row[j]; }); });
+  };
+  L.matmul = function (A, B) {
+    var Bt = L.transpose(B);
+    return A.map(function (row) { return Bt.map(function (col) { return L.dot(row, col); }); });
+  };
+  L.matvec = function (A, v) { return A.map(function (row) { return L.dot(row, v); }); };
+  L.mapM = function (A, f) { return A.map(function (row, i) { return row.map(function (x, j) { return f(x, i, j); }); }); };
+  L.softmax = function (a, T) {
+    T = T == null ? 1 : T;
+    var m = L.max(a);
+    var e = a.map(function (x) { return Math.exp((x - m) / T); });
+    var s = L.sum(e);
+    return e.map(function (x) { return x / s; });
+  };
+  /* Rescale non-negative weights to sum to 1. Returns all zeros if the sum is 0. */
+  L.normalize = function (a) {
+    var s = L.sum(a);
+    return a.map(function (x) { return s > 0 ? x / s : 0; });
+  };
+
+  // ------------------------------------------------------------ formatting
+  /* Format a number for display: d decimals, trailing zeros removed,
+   * exponential notation for very small / very large magnitudes. */
+  L.fmt = function (x, d) {
+    d = d == null ? 3 : d;
+    if (typeof x === 'boolean') return x ? 'true' : 'false';
+    if (typeof x !== 'number') return String(x);
+    if (isNaN(x)) return 'NaN';
+    if (!isFinite(x)) return x > 0 ? '∞' : '-∞';
+    var ax = Math.abs(x);
+    if (ax !== 0 && (ax < Math.pow(10, -d) || ax >= 1e6)) return x.toExponential(Math.max(1, d - 1));
+    var s = x.toFixed(d);
+    if (s.indexOf('.') >= 0) s = s.replace(/0+$/, '').replace(/\.$/, '');
+    if (s === '-0') s = '0';
+    return s;
+  };
+  L.esc = function (s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  };
+
+  // ----------------------------------------------------------------- colors
+  var PALETTE = ['#0072B2', '#E69F00', '#009E73', '#D55E00', '#CC79A7', '#56B4E9', '#8C6D1F', '#555555'];
+  L.color = function (i) { return PALETTE[((i % PALETTE.length) + PALETTE.length) % PALETTE.length]; };
+  function mix(c1, c2, t) {
+    t = L.clamp(isFinite(t) ? t : 0, 0, 1);
+    var r = Math.round(c1[0] + (c2[0] - c1[0]) * t), g = Math.round(c1[1] + (c2[1] - c1[1]) * t),
+      b = Math.round(c1[2] + (c2[2] - c1[2]) * t);
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
+  /* Sequential color for t in [0,1] (light -> dark blue). */
+  L.heat = function (t) { return mix([239, 245, 252], [8, 69, 148], t); };
+  /* Diverging color for t in [-1,1] (red <- white -> blue). */
+  L.diverge = function (t) {
+    t = L.clamp(isFinite(t) ? t : 0, -1, 1);
+    return t < 0 ? mix([255, 255, 255], [202, 0, 32], -t) : mix([255, 255, 255], [5, 113, 176], t);
+  };
+  function isDark(rgb) {
+    var m = /rgb\((\d+),(\d+),(\d+)\)/.exec(rgb);
+    if (!m) return false;
+    return 0.299 * m[1] + 0.587 * m[2] + 0.114 * m[3] < 140;
+  }
+
+  // -------------------------------------------------------------- svg basics
+  function attrs(o) {
+    var s = '';
+    for (var k in o) {
+      if (o[k] === undefined || o[k] === null || o[k] === false) continue;
+      s += ' ' + k + '="' + L.esc(o[k]) + '"';
+    }
+    return s;
+  }
+  function num(x) { return isFinite(x) ? Math.round(x * 100) / 100 : 0; }
+
+  /* Wrap a body in a responsive <svg> with the given viewBox size. */
+  L.svg = function (w, h, body, o) {
+    o = o || {};
+    return '<svg xmlns="http://www.w3.org/2000/svg" class="p2p-svg" viewBox="0 0 ' + num(w) + ' ' + num(h) +
+      '" width="100%" style="max-width:' + num(w) + 'px;font-family:inherit" role="img"' +
+      (o.title ? ' aria-label="' + L.esc(o.title) + '"' : '') + '>' +
+      (o.title ? '<title>' + L.esc(o.title) + '</title>' : '') + body + '</svg>';
+  };
+  L.g = function (body, o) { o = o || {}; return '<g' + attrs({ transform: o.transform, opacity: o.opacity }) + '>' + body + '</g>'; };
+  L.text = function (x, y, str, o) {
+    o = o || {};
+    var tr = o.rotate ? 'rotate(' + o.rotate + ' ' + num(x) + ' ' + num(y) + ')' : null;
+    return '<text' + attrs({
+      x: num(x), y: num(y), 'font-size': o.size || 13, 'text-anchor': o.anchor || 'start',
+      'dominant-baseline': o.baseline || null, fill: o.color || '#1f2933',
+      'font-weight': o.weight || null, 'font-style': o.italic ? 'italic' : null, transform: tr, class: o.cls || null
+    }) + '>' + L.esc(str) + '</text>';
+  };
+  L.line = function (x1, y1, x2, y2, o) {
+    o = o || {};
+    return '<line' + attrs({
+      x1: num(x1), y1: num(y1), x2: num(x2), y2: num(y2), stroke: o.color || '#52606d',
+      'stroke-width': o.width || 1.5, 'stroke-dasharray': o.dash || null, opacity: o.opacity
+    }) + '/>';
+  };
+  L.rect = function (x, y, w, h, o) {
+    o = o || {};
+    return '<rect' + attrs({
+      x: num(x), y: num(y), width: num(Math.max(0, w)), height: num(Math.max(0, h)), rx: o.rx || null,
+      fill: o.fill || 'none', stroke: o.stroke || null, 'stroke-width': o.stroke ? (o.width || 1) : null,
+      opacity: o.opacity
+    }) + '/>';
+  };
+  L.circle = function (cx, cy, r, o) {
+    o = o || {};
+    return '<circle' + attrs({
+      cx: num(cx), cy: num(cy), r: num(Math.max(0, r)), fill: o.fill || '#0072B2', stroke: o.stroke || null,
+      'stroke-width': o.stroke ? (o.width || 1) : null, opacity: o.opacity
+    }) + '/>';
+  };
+  L.path = function (d, o) {
+    o = o || {};
+    return '<path' + attrs({
+      d: d, fill: o.fill || 'none', stroke: o.color || '#0072B2', 'stroke-width': o.width || 2,
+      'stroke-dasharray': o.dash || null, opacity: o.opacity
+    }) + '/>';
+  };
+  /* Polyline through [[x,y],...]; non-finite points break the line. */
+  L.polyline = function (pts, o) {
+    var d = '', pen = false;
+    for (var i = 0; i < pts.length; i++) {
+      var p = pts[i];
+      if (!p || !isFinite(p[0]) || !isFinite(p[1])) { pen = false; continue; }
+      d += (pen ? 'L' : 'M') + num(p[0]) + ' ' + num(p[1]) + ' ';
+      pen = true;
+    }
+    return d ? L.path(d.trim(), o) : '';
+  };
+  /* Straight arrow with a filled head (no <marker> ids needed). */
+  L.arrow = function (x1, y1, x2, y2, o) {
+    o = o || {};
+    var c = o.color || '#52606d', hs = o.head || 8, ang = Math.atan2(y2 - y1, x2 - x1);
+    var bx = x2 - hs * Math.cos(ang), by = y2 - hs * Math.sin(ang);
+    var p1 = [bx + hs * 0.5 * Math.sin(ang), by - hs * 0.5 * Math.cos(ang)];
+    var p2 = [bx - hs * 0.5 * Math.sin(ang), by + hs * 0.5 * Math.cos(ang)];
+    var s = L.line(x1, y1, bx, by, { color: c, width: o.width || 1.5, dash: o.dash }) +
+      '<polygon points="' + num(x2) + ',' + num(y2) + ' ' + num(p1[0]) + ',' + num(p1[1]) + ' ' +
+      num(p2[0]) + ',' + num(p2[1]) + '" fill="' + L.esc(c) + '"/>';
+    if (o.label) s += L.text((x1 + x2) / 2, (y1 + y2) / 2 - 6, o.label, { anchor: 'middle', size: o.size || 12, color: c });
+    return s;
+  };
+  /* Legend items [{label,color}] laid out vertically from (x,y). */
+  L.legend = function (x, y, items, o) {
+    o = o || {};
+    return items.map(function (it, i) {
+      var yy = y + i * (o.gap || 18);
+      return L.rect(x, yy - 6, 12, 12, { fill: it.color || L.color(i), rx: 2 }) +
+        L.text(x + 18, yy, it.label, { size: o.size || 12, baseline: 'middle' });
+    }).join('');
+  };
+
+  /* "Nice" tick values covering [a,b]. */
+  L.ticks = function (a, b, n) {
+    n = n || 5;
+    if (!isFinite(a) || !isFinite(b)) return [];
+    if (a === b) return [a];
+    if (a > b) { var t = a; a = b; b = t; }
+    var raw = (b - a) / Math.max(1, n - 1), mag = Math.pow(10, Math.floor(Math.log10(raw))), r = raw / mag;
+    var step = (r <= 1 ? 1 : r <= 2 ? 2 : r <= 2.5 ? 2.5 : r <= 5 ? 5 : 10) * mag;
+    var out = [];
+    for (var v = Math.ceil(a / step - 1e-9) * step; v <= b + step * 1e-9; v += step) out.push(Math.abs(v) < step * 1e-9 ? 0 : v);
+    return out;
+  };
+  L.scale = function (d0, d1, r0, r1) {
+    return function (v) { return d1 === d0 ? (r0 + r1) / 2 : r0 + (v - d0) * (r1 - r0) / (d1 - d0); };
+  };
+
+  // ----------------------------------------------------------------- charts
+  /* Bar chart inside box {x,y,w,h}. Handles negative values (baseline at 0).
+   * o: values, labels, min, max, colors (array) | color, highlight (index or
+   * array of indices), title, yLabel, fmt(v), showValues (default true),
+   * refLines [{value,label,color}]. */
+  L.bars = function (o) {
+    var x = o.x || 0, y = o.y || 0, w = o.w || 320, h = o.h || 200, vals = o.values || [], n = vals.length;
+    var fmt = o.fmt || function (v) { return L.fmt(v, 3); };
+    var fin = vals.filter(isFinite);
+    var lo = o.min != null ? o.min : Math.min(0, fin.length ? L.min(fin) : 0);
+    var hi = o.max != null ? o.max : Math.max(0, fin.length ? L.max(fin) : 1);
+    if (hi === lo) hi = lo + 1;
+    var top = y + (o.title ? 22 : 6) + 16, bottom = y + h - (o.labels ? 22 : 6), left = x + (o.yLabel ? 46 : 34), right = x + w - 4;
+    var sy = L.scale(lo, hi, bottom, top), s = '';
+    if (o.title) s += L.text(x + w / 2, y + 14, o.title, { anchor: 'middle', size: 13, weight: 600 });
+    if (o.yLabel) s += L.text(x + 11, (top + bottom) / 2, o.yLabel, { anchor: 'middle', size: 12, rotate: -90 });
+    L.ticks(lo, hi, 4).forEach(function (t) {
+      s += L.line(left, sy(t), right, sy(t), { color: '#e4e7eb', width: 1 }) +
+        L.text(left - 4, sy(t), L.fmt(t, 3), { anchor: 'end', size: 10, baseline: 'middle', color: '#616e7c' });
+    });
+    var bw = (right - left) / Math.max(1, n), hl = o.highlight == null ? [] : [].concat(o.highlight);
+    vals.forEach(function (v, i) {
+      var bx = left + i * bw + bw * 0.15, bwi = bw * 0.7, vv = isFinite(v) ? L.clamp(v, lo, hi) : 0;
+      var y0 = sy(L.clamp(0, lo, hi)), y1 = sy(vv), col = o.colors ? o.colors[i % o.colors.length] : (o.color || L.color(0));
+      s += L.rect(bx, Math.min(y0, y1), bwi, Math.abs(y1 - y0), { fill: col, stroke: hl.indexOf(i) >= 0 ? '#1f2933' : null, width: 2, rx: 2 });
+      if (o.showValues !== false) s += L.text(bx + bwi / 2, v >= 0 ? Math.min(y0, y1) - 4 : Math.max(y0, y1) + 12, isFinite(v) ? fmt(v) : String(v), { anchor: 'middle', size: 11 });
+      if (o.labels) s += L.text(bx + bwi / 2, bottom + 15, o.labels[i] == null ? '' : o.labels[i], { anchor: 'middle', size: 12 });
+    });
+    s += L.line(left, sy(L.clamp(0, lo, hi)), right, sy(L.clamp(0, lo, hi)), { color: '#52606d', width: 1 });
+    (o.refLines || []).forEach(function (r) {
+      if (!isFinite(r.value)) return;
+      var yy = sy(L.clamp(r.value, lo, hi));
+      s += L.line(left, yy, right, yy, { color: r.color || '#D55E00', dash: '5 3', width: 1.5 });
+      if (r.label) s += L.text(right, yy - 4, r.label, { anchor: 'end', size: 11, color: r.color || '#D55E00' });
+    });
+    return s;
+  };
+
+  /* Matrix heatmap inside box {x,y,w,h} with optional row/column labels.
+   * o: matrix, rowLabels, colLabels, title, min, max, fmt(v), showValues,
+   * highlight [[i,j],...]. Diverging colors when the range spans zero. */
+  L.heatmap = function (o) {
+    var M = o.matrix || [[]], rows = M.length, cols = rows ? M[0].length : 0;
+    var x = o.x || 0, y = o.y || 0, w = o.w || 240, h = o.h || 200;
+    var fmt = o.fmt || function (v) { return L.fmt(v, 2); };
+    var flat = [].concat.apply([], M).filter(isFinite);
+    var lo = o.min != null ? o.min : (flat.length ? L.min(flat) : 0), hi = o.max != null ? o.max : (flat.length ? L.max(flat) : 1);
+    var div = lo < 0 && hi > 0, amax = Math.max(Math.abs(lo), Math.abs(hi)) || 1;
+    var topH = (o.title ? 20 : 0) + (o.colLabels ? 18 : 0), leftW = o.rowLabels ? 40 : 0;
+    var cell = Math.max(8, Math.min((w - leftW) / Math.max(1, cols), (h - topH) / Math.max(1, rows)));
+    var s = '', gx = x + leftW, gy = y + topH, hl = o.highlight || [];
+    if (o.title) s += L.text(gx + cols * cell / 2, y + 13, o.title, { anchor: 'middle', size: 13, weight: 600 });
+    for (var j = 0; j < cols && o.colLabels; j++) s += L.text(gx + (j + 0.5) * cell, gy - 5, o.colLabels[j] == null ? '' : o.colLabels[j], { anchor: 'middle', size: 11, color: '#616e7c' });
+    for (var i = 0; i < rows; i++) {
+      if (o.rowLabels) s += L.text(gx - 5, gy + (i + 0.5) * cell, o.rowLabels[i] == null ? '' : o.rowLabels[i], { anchor: 'end', size: 11, baseline: 'middle', color: '#616e7c' });
+      for (var k = 0; k < cols; k++) {
+        var v = M[i][k], fill = !isFinite(v) ? '#f8d7da' : div ? L.diverge(v / amax) : L.heat(hi === lo ? 0.5 : (v - lo) / (hi - lo));
+        var isH = hl.some(function (p) { return p[0] === i && p[1] === k; });
+        s += L.rect(gx + k * cell, gy + i * cell, cell - 2, cell - 2, { fill: fill, stroke: isH ? '#1f2933' : '#ffffff', width: isH ? 2.5 : 1, rx: 3 });
+        if (o.showValues !== false && cell >= 22) s += L.text(gx + k * cell + (cell - 2) / 2, gy + i * cell + (cell - 2) / 2, isFinite(v) ? fmt(v) : String(v), { anchor: 'middle', baseline: 'middle', size: Math.min(13, cell / 3.2), color: isDark(fill) ? '#ffffff' : '#1f2933' });
+      }
+    }
+    return s;
+  };
+
+  /* Line/scatter plot inside box {x,y,w,h}.
+   * o: series [{points:[[x,y],...], label, color, dash, width, dots}],
+   * xDomain [a,b], yDomain [a,b] (auto if omitted), xLabel, yLabel, title,
+   * markers [{x,y,label,color,r}], vlines [{x,label,color}], hlines [{y,label,color}],
+   * legend (default true when any series has a label). Returns an SVG
+   * fragment string. L.plotScales(o) with the same options returns the
+   * {sx, sy} functions that map data coordinates to pixels. */
+  L.plotScales = function (o) {
+    var x = o.x || 0, y = o.y || 0, w = o.w || 360, h = o.h || 220, series = o.series || [];
+    var xs = [], ys = [];
+    series.forEach(function (sr) { (sr.points || []).forEach(function (p) { if (isFinite(p[0]) && isFinite(p[1])) { xs.push(p[0]); ys.push(p[1]); } }); });
+    (o.markers || []).forEach(function (m) { if (isFinite(m.x) && isFinite(m.y)) { xs.push(m.x); ys.push(m.y); } });
+    var xd = o.xDomain || [xs.length ? L.min(xs) : 0, xs.length ? L.max(xs) : 1];
+    var yd = o.yDomain || [ys.length ? Math.min(0, L.min(ys)) : 0, ys.length ? L.max(ys) : 1];
+    if (xd[0] === xd[1]) xd = [xd[0] - 1, xd[1] + 1];
+    if (yd[0] === yd[1]) yd = [yd[0] - 1, yd[1] + 1];
+    var left = x + (o.yLabel ? 52 : 40), right = x + w - 10, top = y + (o.title ? 24 : 8), bottom = y + h - (o.xLabel ? 38 : 24);
+    return { sx: L.scale(xd[0], xd[1], left, right), sy: L.scale(yd[0], yd[1], bottom, top), xd: xd, yd: yd, left: left, right: right, top: top, bottom: bottom };
+  };
+  L.plot = function (o) {
+    var S = L.plotScales(o), s = '', x = o.x || 0, y = o.y || 0, w = o.w || 360, h = o.h || 220;
+    var cx = function (v) { return L.clamp(S.sx(v), S.left, S.right); }, cy = function (v) { return L.clamp(S.sy(v), S.top, S.bottom); };
+    if (o.title) s += L.text(x + w / 2, y + 15, o.title, { anchor: 'middle', size: 13, weight: 600 });
+    L.ticks(S.yd[0], S.yd[1], 5).forEach(function (t) {
+      s += L.line(S.left, S.sy(t), S.right, S.sy(t), { color: '#e4e7eb', width: 1 }) +
+        L.text(S.left - 5, S.sy(t), L.fmt(t, 3), { anchor: 'end', size: 10, baseline: 'middle', color: '#616e7c' });
+    });
+    L.ticks(S.xd[0], S.xd[1], 6).forEach(function (t) {
+      s += L.line(S.sx(t), S.bottom, S.sx(t), S.bottom + 4, { color: '#52606d', width: 1 }) +
+        L.text(S.sx(t), S.bottom + 15, L.fmt(t, 3), { anchor: 'middle', size: 10, color: '#616e7c' });
+    });
+    s += L.line(S.left, S.bottom, S.right, S.bottom, { color: '#52606d', width: 1 }) + L.line(S.left, S.top, S.left, S.bottom, { color: '#52606d', width: 1 });
+    if (o.xLabel) s += L.text((S.left + S.right) / 2, y + h - 6, o.xLabel, { anchor: 'middle', size: 12 });
+    if (o.yLabel) s += L.text(x + 12, (S.top + S.bottom) / 2, o.yLabel, { anchor: 'middle', size: 12, rotate: -90 });
+    (o.hlines || []).forEach(function (r) {
+      if (!isFinite(r.y) || r.y < S.yd[0] || r.y > S.yd[1]) return;
+      s += L.line(S.left, S.sy(r.y), S.right, S.sy(r.y), { color: r.color || '#D55E00', dash: '5 3' });
+      if (r.label) s += L.text(S.right - 2, S.sy(r.y) - 4, r.label, { anchor: 'end', size: 11, color: r.color || '#D55E00' });
+    });
+    (o.vlines || []).forEach(function (r) {
+      if (!isFinite(r.x) || r.x < S.xd[0] || r.x > S.xd[1]) return;
+      s += L.line(S.sx(r.x), S.top, S.sx(r.x), S.bottom, { color: r.color || '#D55E00', dash: '5 3' });
+      if (r.label) s += L.text(S.sx(r.x) + 4, S.top + 10, r.label, { size: 11, color: r.color || '#D55E00' });
+    });
+    (o.series || []).forEach(function (sr, i) {
+      var col = sr.color || L.color(i);
+      var pts = (sr.points || []).map(function (p) {
+        return isFinite(p[0]) && isFinite(p[1]) && p[1] >= S.yd[0] - 1e-12 && p[1] <= S.yd[1] + 1e-12 ? [S.sx(p[0]), S.sy(p[1])] : [NaN, NaN];
+      });
+      if (sr.line !== false) s += L.polyline(pts, { color: col, width: sr.width || 2, dash: sr.dash });
+      if (sr.dots) pts.forEach(function (p) { if (isFinite(p[0])) s += L.circle(p[0], p[1], 3, { fill: col }); });
+    });
+    (o.markers || []).forEach(function (m) {
+      if (!isFinite(m.x) || !isFinite(m.y)) return;
+      s += L.circle(cx(m.x), cy(m.y), m.r || 5, { fill: m.color || '#D55E00', stroke: '#ffffff', width: 1.5 });
+      if (m.label) s += L.text(cx(m.x) + 8, cy(m.y) - 8, m.label, { size: 11, color: m.color || '#D55E00', weight: 600 });
+    });
+    var labeled = (o.series || []).filter(function (sr) { return sr.label; });
+    if (labeled.length && o.legend !== false) {
+      s += L.legend(S.left + 10, S.top + 10, (o.series || []).map(function (sr, i) { return { label: sr.label || '', color: sr.color || L.color(i) }; }).filter(function (it) { return it.label; }));
+    }
+    return s;
+  };
+
+  return L;
+})();
+
+</script>
+<script>
+function compute(s) {
+  const nq = Math.max(1, Math.round(s.nq));
+  const nk = Math.max(1, Math.round(s.nk));
+  const dk = Math.max(1, Math.round(s.dk));
+  const dv = Math.max(1, Math.round(s.dv));
+  const scale = !!s.scale;
+
+  // Build Q, K, V with safe dimensions
+  const Q = [], K = [], V = [];
+  for (let i = 0; i < nq; i++) {
+    const row = [];
+    for (let j = 0; j < dk; j++) {
+      const v = (s.Q && s.Q[i] && s.Q[i][j] !== undefined) ? Number(s.Q[i][j]) : 0;
+      row.push(Number.isFinite(v) ? v : 0);
+    }
+    Q.push(row);
+  }
+  for (let i = 0; i < nk; i++) {
+    const row = [];
+    for (let j = 0; j < dk; j++) {
+      const v = (s.K && s.K[i] && s.K[i][j] !== undefined) ? Number(s.K[i][j]) : 0;
+      row.push(Number.isFinite(v) ? v : 0);
+    }
+    K.push(row);
+  }
+  for (let i = 0; i < nk; i++) {
+    const row = [];
+    for (let j = 0; j < dv; j++) {
+      const v = (s.V && s.V[i] && s.V[i][j] !== undefined) ? Number(s.V[i][j]) : 0;
+      row.push(Number.isFinite(v) ? v : 0);
+    }
+    V.push(row);
+  }
+
+  // S = Q K^T
+  const S = [];
+  for (let i = 0; i < nq; i++) {
+    const row = [];
+    for (let j = 0; j < nk; j++) {
+      let acc = 0;
+      for (let t = 0; t < dk; t++) acc += Q[i][t] * K[j][t];
+      row.push(acc);
+    }
+    S.push(row);
+  }
+
+  const denom = Math.sqrt(dk);
+  const Sscaled = S.map(row => row.map(x => x / denom));
+
+  // softmax row-wise on Sscaled (or S if scale off)
+  const src = scale ? Sscaled : S;
+  const A = [];
+  for (let i = 0; i < nq; i++) {
+    const row = src[i];
+    let m = -Infinity;
+    for (let j = 0; j < nk; j++) if (row[j] > m) m = row[j];
+    if (!Number.isFinite(m)) m = 0;
+    const ex = row.map(x => Math.exp(x - m));
+    let sum = 0;
+    for (let j = 0; j < nk; j++) sum += ex[j];
+    if (!(sum > 0) || !Number.isFinite(sum)) {
+      A.push(row.map(() => 1 / nk));
+    } else {
+      A.push(ex.map(x => x / sum));
+    }
+  }
+
+  // O = A V
+  const O = [];
+  for (let i = 0; i < nq; i++) {
+    const row = [];
+    for (let j = 0; j < dv; j++) {
+      let acc = 0;
+      for (let t = 0; t < nk; t++) acc += A[i][t] * V[t][j];
+      row.push(acc);
+    }
+    O.push(row);
+  }
+
+  const rowSums = A.map(row => row.reduce((a, b) => a + b, 0));
+
+  // selected row
+  let row = Math.round(s.row);
+  if (!Number.isFinite(row)) row = 0;
+  row = Math.max(0, Math.min(nq - 1, row));
+
+  // explicit weighted sum for selected row
+  const weighted = [];
+  for (let j = 0; j < dv; j++) {
+    let acc = 0;
+    for (let t = 0; t < nk; t++) acc += A[row][t] * V[t][j];
+    weighted.push(acc);
+  }
+
+  return {
+    nq, nk, dk, dv,
+    scale: scale ? 1 : 0,
+    Q, K, V,
+    S, Sscaled, A, O,
+    rowSums,
+    row,
+    weightsRow: A[row],
+    weightedRow: weighted,
+    outputRow: O[row],
+    sqrtDk: denom
+  };
+}
+
+function render(s, r) {
+  const W = 760, H = 560;
+  const parts = [];
+  const pad = 16;
+
+  // Layout: three heatmaps in a row
+  const hmW = 200, hmH = 170;
+  const y0 = 60;
+  const x1 = pad + 10;
+  const x2 = x1 + hmW + 60;
+  const x3 = x2 + hmW + 60;
+
+  const nq = r.nq, nk = r.nk, dv = r.dv;
+
+  const rowLabelsQ = [];
+  for (let i = 0; i < nq; i++) rowLabelsQ.push('q' + (i + 1));
+  const colLabelsK = [];
+  for (let j = 0; j < nk; j++) colLabelsK.push('k' + (j + 1));
+  const colLabelsV = [];
+  for (let j = 0; j < dv; j++) colLabelsV.push('d' + (j + 1));
+
+  // Title
+  parts.push(L.text(W / 2, 24, 'Scaled Dot-Product Attention', { size: 18, anchor: 'middle', weight: 'bold' }));
+  parts.push(L.text(W / 2, 44, r.scale ? 'scores divided by sqrt(d_k) = ' + L.fmt(r.sqrtDk, 3) : 'scaling OFF (raw dot products)', { size: 13, anchor: 'middle', color: '#555' }));
+
+  // Heatmap 1: scores
+  const scoreMatrix = r.scale ? r.Sscaled : r.S;
+  const scoreTitle = r.scale ? 'Scores  S / sqrt(d_k)' : 'Scores  S = Q K^T';
+  parts.push(L.heatmap({
+    x: x1, y: y0, w: hmW, h: hmH,
+    matrix: scoreMatrix,
+    rowLabels: rowLabelsQ,
+    colLabels: colLabelsK,
+    title: scoreTitle,
+    fmt: (v) => L.fmt(v, 2),
+    highlight: [[r.row, 0]]
+  }));
+
+  // Heatmap 2: weights
+  parts.push(L.heatmap({
+    x: x2, y: y0, w: hmW, h: hmH,
+    matrix: r.A,
+    rowLabels: rowLabelsQ,
+    colLabels: colLabelsK,
+    title: 'Weights  A = softmax(...)',
+    min: 0, max: 1,
+    fmt: (v) => L.fmt(v, 2),
+    highlight: [[r.row, 0]]
+  }));
+
+  // Heatmap 3: output
+  parts.push(L.heatmap({
+    x: x3, y: y0, w: hmW, h: hmH,
+    matrix: r.O,
+    rowLabels: rowLabelsQ,
+    colLabels: colLabelsV,
+    title: 'Output  O = A V',
+    fmt: (v) => L.fmt(v, 2),
+    highlight: [[r.row, 0]]
+  }));
+
+  // Row sums annotation
+  const rsY = y0 + hmH + 22;
+  parts.push(L.text(x2, rsY, 'row sums of A:', { size: 12, anchor: 'start', color: '#333' }));
+  for (let i = 0; i < nq; i++) {
+    parts.push(L.text(x2 + 90 + i * 55, rsY, L.fmt(r.rowSums[i], 3), { size: 12, anchor: 'start', color: '#333' }));
+  }
+
+  // Bar chart of selected row weights
+  const barY = rsY + 30;
+  parts.push(L.bars({
+    x: pad + 10, y: barY, w: 340, h: 150,
+    values: r.weightsRow,
+    labels: colLabelsK,
+    title: 'Weights for query row ' + (r.row + 1),
+    yLabel: 'weight',
+    min: 0, max: 1,
+    fmt: (v) => L.fmt(v, 3)
+  }));
+
+  // Weighted sum text
+  const tx = pad + 380;
+  parts.push(L.text(tx, barY + 10, 'Weighted sum of V rows for query ' + (r.row + 1) + ':', { size: 13, anchor: 'start', weight: 'bold' }));
+  for (let j = 0; j < dv; j++) {
+    parts.push(L.text(tx, barY + 34 + j * 20, 'dim ' + (j + 1) + ': ' + L.fmt(r.weightedRow[j], 3), { size: 12, anchor: 'start' }));
+  }
+  parts.push(L.text(tx, barY + 34 + dv * 20 + 10, 'Output row ' + (r.row + 1) + ':', { size: 13, anchor: 'start', weight: 'bold' }));
+  for (let j = 0; j < dv; j++) {
+    parts.push(L.text(tx, barY + 34 + dv * 20 + 34 + j * 20, 'dim ' + (j + 1) + ': ' + L.fmt(r.outputRow[j], 3), { size: 12, anchor: 'start' }));
+  }
+
+  return L.svg(W, H, parts.join(''));
+}
+
+function show(s, r) {
+  const out = [];
+  out.push({ label: 'n_q', value: r.nq, digits: 0, note: 'number of queries' });
+  out.push({ label: 'n_k', value: r.nk, digits: 0, note: 'number of keys/values' });
+  out.push({ label: 'd_k', value: r.dk, digits: 0, note: 'key dimension' });
+  out.push({ label: 'd_v', value: r.dv, digits: 0, note: 'value dimension' });
+  out.push({ label: 'sqrt(d_k)', value: r.sqrtDk, digits: 3, note: 'scaling denominator' });
+  out.push({ label: 'scaling', value: r.scale ? 'on' : 'off', digits: 0, note: 'divide scores by sqrt(d_k)' });
+  out.push({ label: 'S = Q K^T', value: r.S, digits: 3, note: 'raw scores', rowLabels: r.Q.map((_, i) => 'q' + (i + 1)), colLabels: r.K.map((_, j) => 'k' + (j + 1)) });
+  out.push({ label: 'S / sqrt(d_k)', value: r.Sscaled, digits: 3, note: 'scaled scores', rowLabels: r.Q.map((_, i) => 'q' + (i + 1)), colLabels: r.K.map((_, j) => 'k' + (j + 1)) });
+  out.push({ label: 'A = softmax(...)', value: r.A, digits: 3, note: 'attention weights', rowLabels: r.Q.map((_, i) => 'q' + (i + 1)), colLabels: r.K.map((_, j) => 'k' + (j + 1)) });
+  out.push({ label: 'row sums of A', value: r.rowSums, digits: 3, note: 'each should be 1', colLabels: r.Q.map((_, i) => 'q' + (i + 1)) });
+  out.push({ label: 'O = A V', value: r.O, digits: 3, note: 'output', rowLabels: r.Q.map((_, i) => 'q' + (i + 1)), colLabels: r.V[0].map((_, j) => 'd' + (j + 1)) });
+  out.push({ label: 'weights row ' + (r.row + 1), value: r.weightsRow, digits: 3, note: 'selected query weights', colLabels: r.K.map((_, j) => 'k' + (j + 1)) });
+  out.push({ label: 'weighted V row ' + (r.row + 1), value: r.weightedRow, digits: 3, note: 'sum_j A[row][j] V[j]', colLabels: r.V[0].map((_, j) => 'd' + (j + 1)) });
+  return out;
+}
+
+function checks(s, r) {
+  const out = [];
+
+  // 1. Row sums of A equal 1
+  let maxDev = 0;
+  for (let i = 0; i < r.nq; i++) {
+    maxDev = Math.max(maxDev, Math.abs(r.rowSums[i] - 1));
+  }
+  out.push({
+    name: 'each row of A sums to 1',
+    pass: maxDev < 1e-9,
+    detail: 'max |rowSum - 1| = ' + L.fmt(maxDev, 3)
+  });
+
+  // 2. Weights non-negative
+  let minW = Infinity;
+  for (let i = 0; i < r.nq; i++) {
+    for (let j = 0; j < r.nk; j++) minW = Math.min(minW, r.A[i][j]);
+  }
+  out.push({
+    name: 'all attention weights >= 0',
+    pass: minW >= -1e-12,
+    detail: 'min weight = ' + L.fmt(minW, 3)
+  });
+
+  // 3. O equals A V recomputed
+  let maxO = 0;
+  for (let i = 0; i < r.nq; i++) {
+    for (let j = 0; j < r.dv; j++) {
+      let acc = 0;
+      for (let t = 0; t < r.nk; t++) acc += r.A[i][t] * r.V[t][j];
+      maxO = Math.max(maxO, Math.abs(acc - r.O[i][j]));
+    }
+  }
+  out.push({
+    name: 'O equals A V',
+    pass: maxO < 1e-9,
+    detail: 'max |O - A V| = ' + L.fmt(maxO, 3)
+  });
+
+  // 4. Scaling divides scores by sqrt(d_k)
+  let maxS = 0;
+  for (let i = 0; i < r.nq; i++) {
+    for (let j = 0; j < r.nk; j++) {
+      maxS = Math.max(maxS, Math.abs(r.Sscaled[i][j] - r.S[i][j] / r.sqrtDk));
+    }
+  }
+  out.push({
+    name: 'Sscaled = S / sqrt(d_k)',
+    pass: maxS < 1e-9,
+    detail: 'max deviation = ' + L.fmt(maxS, 3)
+  });
+
+  // 5. Selected row weighted sum matches output row
+  let maxW = 0;
+  for (let j = 0; j < r.dv; j++) {
+    maxW = Math.max(maxW, Math.abs(r.weightedRow[j] - r.outputRow[j]));
+  }
+  out.push({
+    name: 'selected row: weighted V equals output row',
+    pass: maxW < 1e-9,
+    detail: 'max deviation = ' + L.fmt(maxW, 3)
+  });
+
+  return out;
+}
+</script>
+<script>
+/* Paper to Playground - generic page runtime (DOM glue).
+ * Builds the controls declared in the page spec, keeps the learner's state,
+ * and on every change calls the generated pure functions:
+ *   compute(state) -> result         (all numbers shown on the page)
+ *   render(state, result) -> SVG     (the visual)
+ *   show(state, result) -> [items]   (intermediate values)
+ *   checks(state, result) -> [items] (live invariant checks)
+ * Each call is isolated so one failure is reported without breaking the rest.
+ * This file is generic: it contains no paper-specific content.
+ */
+(function () {
+  'use strict';
+  var specEl = document.getElementById('p2p-spec');
+  var SPEC = specEl ? JSON.parse(specEl.textContent) : { controls: [], explorations: [] };
+  var CONTROLS = SPEC.controls || [];
+  var state = {};
+
+  function $(id) { return document.getElementById(id); }
+  function el(tag, cls, html) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (html != null) e.innerHTML = html;
+    return e;
+  }
+  function esc(s) { return L.esc(s == null ? '' : s); }
+  function decimalsOf(step) {
+    var s = String(step == null ? 1 : step);
+    return s.indexOf('.') >= 0 ? s.split('.')[1].length : 0;
+  }
+  function fmtControl(c, v) { return L.fmt(Number(v), Math.max(decimalsOf(c.step), 0)); }
+
+  // ------------------------------------------------------------ dimensions
+  function dimValue(d, fallback) {
+    if (typeof d === 'number') return Math.max(1, Math.round(d));
+    if (typeof d === 'string' && state[d] != null && isFinite(Number(state[d]))) return Math.max(1, Math.round(Number(state[d])));
+    return fallback;
+  }
+  function fillValue(c) { return c.fill != null ? Number(c.fill) : 0; }
+  function resizeVector(v, n, fill) {
+    v = Array.isArray(v) ? v.slice(0, n) : [];
+    while (v.length < n) v.push(fill);
+    return v.map(function (x) { return isFinite(Number(x)) ? Number(x) : fill; });
+  }
+  function resizeMatrix(M, r, c, fill) {
+    M = Array.isArray(M) ? M.slice(0, r) : [];
+    while (M.length < r) M.push([]);
+    return M.map(function (row) { return resizeVector(row, c, fill); });
+  }
+  function conform(c) {
+    if (c.type === 'vector') {
+      var n = dimValue(c.length, Array.isArray(c.value) ? c.value.length : 3);
+      state[c.id] = resizeVector(state[c.id], n, fillValue(c));
+    } else if (c.type === 'matrix') {
+      var r0 = Array.isArray(c.value) ? c.value.length : 2, c0 = r0 && Array.isArray(c.value[0]) ? c.value[0].length : 2;
+      state[c.id] = resizeMatrix(state[c.id], dimValue(c.rows, r0), dimValue(c.cols, c0), fillValue(c));
+    }
+  }
+  function conformAll() { CONTROLS.forEach(conform); }
+  function dependsOn(c, id) { return c.length === id || c.rows === id || c.cols === id; }
+
+  function defaults() {
+    var s = {};
+    CONTROLS.forEach(function (c) { s[c.id] = L.copy(c.value); });
+    return s;
+  }
+  function labelOf(c) { return c.labelHtml || esc(c.label || c.id); }
+  function itemLabel(labels, i, fallback) { return labels && labels[i] != null ? esc(labels[i]) : fallback; }
+
+  // -------------------------------------------------------------- controls
+  function numberInput(c, value, onValue, title) {
+    var inp = el('input', 'p2p-num');
+    inp.type = 'number';
+    if (c.min != null) inp.min = c.min;
+    if (c.max != null) inp.max = c.max;
+    inp.step = c.step != null ? c.step : 'any';
+    inp.value = value;
+    if (title) inp.title = title;
+    inp.addEventListener('input', function () {
+      var v = parseFloat(inp.value);
+      var ok = isFinite(v) && (c.min == null || v >= c.min) && (c.max == null || v <= c.max);
+      inp.classList.toggle('p2p-invalid', !ok);
+      if (ok) onValue(v);
+    });
+    inp.addEventListener('change', function () {
+      var v = parseFloat(inp.value);
+      if (!isFinite(v)) v = Number(value);
+      if (c.min != null) v = Math.max(c.min, v);
+      if (c.max != null) v = Math.min(c.max, v);
+      inp.value = v;
+      inp.classList.remove('p2p-invalid');
+      onValue(v);
+    });
+    return inp;
+  }
+  function rangeInput(c, value, onValue, readout) {
+    var inp = el('input', 'p2p-range');
+    inp.type = 'range';
+    inp.min = c.min != null ? c.min : 0;
+    inp.max = c.max != null ? c.max : 1;
+    inp.step = c.step != null ? c.step : 'any';
+    inp.value = value;
+    inp.addEventListener('input', function () {
+      var v = parseFloat(inp.value);
+      if (readout) readout.textContent = fmtControl(c, v);
+      onValue(v);
+    });
+    return inp;
+  }
+
+  function buildControl(c) {
+    var box = el('div', 'p2p-control p2p-control-' + c.type);
+    box.setAttribute('data-control', c.id);
+    var id = 'p2p-c-' + c.id;
+    var v = state[c.id];
+    if (c.type === 'range' || c.type === 'number') {
+      var head = el('div', 'p2p-control-head');
+      var lab = el('label', 'p2p-label', labelOf(c));
+      lab.htmlFor = id;
+      head.appendChild(lab);
+      var inp;
+      if (c.type === 'range') {
+        var out = el('output', 'p2p-readout', esc(fmtControl(c, v)));
+        head.appendChild(out);
+        inp = rangeInput(c, v, function (x) { setValue(c, x); }, out);
+      } else {
+        inp = numberInput(c, v, function (x) { setValue(c, x); });
+      }
+      inp.id = id;
+      box.appendChild(head);
+      box.appendChild(inp);
+    } else if (c.type === 'toggle') {
+      var tl = el('label', 'p2p-toggle');
+      var cb = el('input');
+      cb.type = 'checkbox';
+      cb.id = id;
+      cb.checked = !!v;
+      cb.addEventListener('change', function () { setValue(c, cb.checked); });
+      tl.appendChild(cb);
+      tl.appendChild(el('span', 'p2p-label', labelOf(c)));
+      box.appendChild(tl);
+    } else if (c.type === 'select') {
+      var sl = el('label', 'p2p-label', labelOf(c));
+      sl.htmlFor = id;
+      var sel = el('select', 'p2p-select');
+      sel.id = id;
+      (c.options || []).forEach(function (o) {
+        var ov = typeof o === 'object' ? o.value : o, ol = typeof o === 'object' ? (o.label != null ? o.label : o.value) : o;
+        var opt = el('option', null, esc(ol));
+        opt.value = JSON.stringify(ov);
+        if (JSON.stringify(ov) === JSON.stringify(v)) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      sel.addEventListener('change', function () { setValue(c, JSON.parse(sel.value)); });
+      box.appendChild(sl);
+      box.appendChild(sel);
+    } else if (c.type === 'vector') {
+      box.appendChild(el('div', 'p2p-label', labelOf(c)));
+      var list = el('div', 'p2p-vector');
+      var useSlider = c.widget ? c.widget === 'slider' : (c.min != null && c.max != null);
+      v.forEach(function (x, i) {
+        var row = el('div', 'p2p-vector-item');
+        var name = itemLabel(c.labels, i, String(i + 1));
+        row.appendChild(el('span', 'p2p-vector-name', name));
+        var setI = function (val) { var arr = state[c.id].slice(); arr[i] = val; setValue(c, arr); };
+        if (useSlider) {
+          var ro = el('output', 'p2p-readout', esc(fmtControl(c, x)));
+          var r = rangeInput(c, x, setI, ro);
+          r.setAttribute('aria-label', (c.label || c.id) + ' ' + (c.labels && c.labels[i] != null ? c.labels[i] : i + 1));
+          row.appendChild(r);
+          row.appendChild(ro);
+        } else {
+          var n = numberInput(c, x, setI);
+          n.setAttribute('aria-label', (c.label || c.id) + ' ' + (i + 1));
+          row.appendChild(n);
+        }
+        list.appendChild(row);
+      });
+      box.appendChild(list);
+    } else if (c.type === 'matrix') {
+      box.appendChild(el('div', 'p2p-label', labelOf(c)));
+      var table = el('table', 'p2p-matrix-input');
+      if (c.colLabels) {
+        var hr = el('tr');
+        hr.appendChild(el('th'));
+        v[0].forEach(function (_, j) { hr.appendChild(el('th', null, itemLabel(c.colLabels, j, ''))); });
+        table.appendChild(hr);
+      }
+      v.forEach(function (rowv, i) {
+        var tr = el('tr');
+        tr.appendChild(el('th', null, itemLabel(c.rowLabels, i, c.colLabels ? String(i + 1) : '')));
+        rowv.forEach(function (x, j) {
+          var td = el('td');
+          var n = numberInput(c, x, function (val) {
+            var M = L.copy(state[c.id]); M[i][j] = val; setValue(c, M);
+          }, (c.label || c.id) + ' [' + (i + 1) + ',' + (j + 1) + ']');
+          n.setAttribute('aria-label', (c.label || c.id) + ' row ' + (i + 1) + ' column ' + (j + 1));
+          td.appendChild(n);
+          tr.appendChild(td);
+        });
+        table.appendChild(tr);
+      });
+      box.appendChild(table);
+    }
+    if (c.help) box.appendChild(el('div', 'p2p-help', c.helpHtml || esc(c.help)));
+    return box;
+  }
+
+  function buildControls() {
+    var host = $('p2p-controls');
+    if (!host) return;
+    host.innerHTML = '';
+    CONTROLS.forEach(function (c) { host.appendChild(buildControl(c)); });
+  }
+
+  function setValue(c, v) {
+    state[c.id] = v;
+    var dependents = CONTROLS.filter(function (d) { return dependsOn(d, c.id); });
+    if (dependents.length) {
+      conformAll();
+      dependents.forEach(function (d) {
+        var old = document.querySelector('[data-control="' + d.id + '"]');
+        if (old) old.parentNode.replaceChild(buildControl(d), old);
+      });
+    }
+    update();
+  }
+
+  // -------------------------------------------------------------- outputs
+  function cellText(x, digits) { return typeof x === 'number' ? L.fmt(x, digits) : esc(x); }
+  function valueHtml(it) {
+    var v = it.value, d = it.digits != null ? it.digits : 3;
+    if (Array.isArray(v) && v.length && Array.isArray(v[0])) {
+      var h = '<table class="p2p-matrix">';
+      if (it.colLabels) h += '<tr><th></th>' + v[0].map(function (_, j) { return '<th>' + itemLabel(it.colLabels, j, '') + '</th>'; }).join('') + '</tr>';
+      v.forEach(function (row, i) {
+        h += '<tr><th>' + itemLabel(it.rowLabels, i, '') + '</th>' + row.map(function (x) { return '<td>' + cellText(x, d) + '</td>'; }).join('') + '</tr>';
+      });
+      return h + '</table>';
+    }
+    if (Array.isArray(v)) {
+      var t = '<table class="p2p-matrix p2p-vector-out">';
+      if (it.colLabels) t += '<tr>' + v.map(function (_, j) { return '<th>' + itemLabel(it.colLabels, j, '') + '</th>'; }).join('') + '</tr>';
+      return t + '<tr>' + v.map(function (x) { return '<td>' + cellText(x, d) + '</td>'; }).join('') + '</tr></table>';
+    }
+    return '<span class="p2p-scalar">' + cellText(v, d) + '</span>';
+  }
+  function showError(where, err) {
+    var box = $('p2p-error');
+    if (!box) return;
+    box.hidden = false;
+    box.appendChild(el('div', null, '<strong>' + esc(where) + ' error:</strong> ' + esc(err && err.message ? err.message : err)));
+  }
+
+  function update() {
+    var errBox = $('p2p-error');
+    if (errBox) { errBox.innerHTML = ''; errBox.hidden = true; }
+    if (typeof window.compute !== 'function') { showError('Setup', 'interactive code did not load'); return; }
+    var result;
+    try { result = window.compute(L.copy(state)); } catch (e) { showError('compute', e); return; }
+    try {
+      var vis = $('p2p-visual');
+      if (vis && typeof window.render === 'function') vis.innerHTML = window.render(L.copy(state), result);
+    } catch (e) { showError('render', e); }
+    try {
+      var vals = $('p2p-values');
+      if (vals && typeof window.show === 'function') {
+        var items = window.show(L.copy(state), result) || [];
+        vals.innerHTML = items.map(function (it) {
+          return '<div class="p2p-value' + (it.highlight ? ' p2p-value-hl' : '') + '"><div class="p2p-value-label">' + esc(it.label) + '</div>' +
+            '<div class="p2p-value-body">' + valueHtml(it) + '</div>' + (it.note ? '<div class="p2p-value-note">' + esc(it.note) + '</div>' : '') + '</div>';
+        }).join('');
+      }
+    } catch (e) { showError('values', e); }
+    try {
+      var chk = $('p2p-checks');
+      if (chk && typeof window.checks === 'function') {
+        var cs = window.checks(L.copy(state), result) || [];
+        chk.innerHTML = cs.map(function (c) {
+          return '<li class="' + (c.pass ? 'p2p-pass' : 'p2p-fail') + '"><span class="p2p-mark" aria-hidden="true">' + (c.pass ? '✓' : '✗') + '</span> ' +
+            '<span class="p2p-check-name">' + esc(c.name) + '</span>' + (c.detail != null && c.detail !== '' ? ' <span class="p2p-check-detail">' + esc(c.detail) + '</span>' : '') + '</li>';
+        }).join('');
+      }
+    } catch (e) { showError('checks', e); }
+  }
+
+  // ---------------------------------------------------------- explorations
+  function applyPreset(i) {
+    var ex = (SPEC.explorations || [])[i];
+    if (!ex || !ex.preset) return;
+    state = defaults();
+    Object.keys(ex.preset).forEach(function (k) { if (k in state) state[k] = L.copy(ex.preset[k]); });
+    conformAll();
+    buildControls();
+    update();
+    document.querySelectorAll('.p2p-exploration').forEach(function (card, j) { card.classList.toggle('p2p-active', j === i); });
+    var pg = $('p2p-playground');
+    if (pg && pg.scrollIntoView) pg.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function init() {
+    state = defaults();
+    conformAll();
+    buildControls();
+    document.querySelectorAll('[data-p2p-preset]').forEach(function (btn) {
+      btn.addEventListener('click', function () { applyPreset(Number(btn.getAttribute('data-p2p-preset'))); });
+    });
+    var reset = $('p2p-reset');
+    if (reset) reset.addEventListener('click', function () {
+      state = defaults(); conformAll(); buildControls(); update();
+      document.querySelectorAll('.p2p-exploration').forEach(function (card) { card.classList.remove('p2p-active'); });
+    });
+    update();
+    window.P2P = { get state() { return L.copy(state); }, update: update, applyPreset: applyPreset };
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+
+</script>
+</body>
+</html>

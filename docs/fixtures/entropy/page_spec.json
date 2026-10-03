@@ -1,0 +1,315 @@
+{
+ "case": {
+  "source_url": "https://people.math.harvard.edu/~ctm/home/text/others/shannon/entropy/entropy.pdf",
+  "title": "A Mathematical Theory of Communication (C. E. Shannon, 1948), Section 6 Choice, Uncertainty and Entropy",
+  "excerpt": "6. Choice, Uncertainty and Entropy. Suppose we have a set of possible events whose probabilities of occurrence are p_1, p_2, ..., p_n. These probabilities are known but that is all we know concerning which event will occur. Can we find a measure of how much \"choice\" is involved in the selection of the event, or of how uncertain we are of the outcome? If there is such a measure, say H(p_1, p_2, ..., p_n), it is reasonable to require of it the following properties: (1) H should be continuous in the p_i. (2) If all the p_i are equal, p_i = 1/n, then H should be a monotonic increasing function of n: with equally likely events there is more choice, or uncertainty, when there are more possible events. (3) If a choice be broken down into two successive choices, the original H should be the weighted sum of the individual values of H. Theorem 2: The only H satisfying the three above assumptions is of the form H = -K sum_{i=1}^{n} p_i log p_i, where K is a positive constant (it merely amounts to a choice of a unit of measure). Quantities of the form H = -sum p_i log p_i play a central role in information theory as measures of information, choice and uncertainty, and will be recognized as the entropy of statistical mechanics. With logarithms to the base 2, the unit is the bit. Properties of H: (1) H = 0 if and only if all the p_i but one are zero, this one having the value unity; thus only when we are certain of the outcome does H vanish, otherwise H is positive. (2) For a given n, H is a maximum and equal to log n when all the p_i are equal (i.e., 1/n); this is also intuitively the most uncertain situation. For two possibilities with probabilities p and q = 1 - p, H = -(p log p + q log q), which is plotted as a function of p in Fig. 7.",
+  "focus": "Explain discrete entropy (Section 6, H = -sum p_i log2 p_i) using a small probability distribution. Let the learner change the distribution and the number of outcomes. Show probabilities, individual contributions, and total entropy in bits. Compare a certain outcome with equally likely outcomes. Check that certainty gives zero bits and four equally likely outcomes give two bits; handle zero probabilities correctly.",
+  "audience": "Engineering undergraduate who knows basic probability and logarithms but has not studied information theory."
+ },
+ "excerpt": "6. Choice, Uncertainty and Entropy. Suppose we have a set of possible events whose probabilities of occurrence are p_1, p_2, ..., p_n. These probabilities are known but that is all we know concerning which event will occur. Can we find a measure of how much \"choice\" is involved in the selection of the event, or of how uncertain we are of the outcome? If there is such a measure, say H(p_1, p_2, ..., p_n), it is reasonable to require of it the following properties: (1) H should be continuous in the p_i. (2) If all the p_i are equal, p_i = 1/n, then H should be a monotonic increasing function of n: with equally likely events there is more choice, or uncertainty, when there are more possible events. (3) If a choice be broken down into two successive choices, the original H should be the weighted sum of the individual values of H. Theorem 2: The only H satisfying the three above assumptions is of the form H = -K sum_{i=1}^{n} p_i log p_i, where K is a positive constant (it merely amounts to a choice of a unit of measure). Quantities of the form H = -sum p_i log p_i play a central role in information theory as measures of information, choice and uncertainty, and will be recognized as the entropy of statistical mechanics. With logarithms to the base 2, the unit is the bit. Properties of H: (1) H = 0 if and only if all the p_i but one are zero, this one having the value unity; thus only when we are certain of the outcome does H vanish, otherwise H is positive. (2) For a given n, H is a maximum and equal to log n when all the p_i are equal (i.e., 1/n); this is also intuitively the most uncertain situation. For two possibilities with probabilities p and q = 1 - p, H = -(p log p + q log q), which is plotted as a function of p in Fig. 7.",
+ "spec": {
+  "plan": {
+   "concept": "Discrete entropy H = -sum p_i log2 p_i as a measure of choice/uncertainty, with its two key properties (H=0 iff certain; H=log2 n when uniform).",
+   "anchor": "Section 6, Theorem 2 and Properties (1) and (2)",
+   "computation": "Normalize the entered weights into a probability vector p_i; compute each contribution c_i = -p_i log2 p_i (with 0 log 0 = 0); sum to H; also compute the uniform reference log2 n and the maximum-contribution index.",
+   "visual": "Left: bar chart of p_i with the uniform level 1/n marked. Right: bar chart of contributions c_i stacked to show H, plus a horizontal reference line at log2 n.",
+   "controls": "n (number of outcomes, 1..6), a weight vector of length n (resized with n), and a preset selector for certain / uniform / skewed distributions.",
+   "checks": "H >= 0; H = 0 iff exactly one p_i = 1; H <= log2 n with equality iff all p_i equal; sum p_i = 1; sum c_i = H; zero probabilities contribute exactly 0."
+  },
+  "title": "Entropy: How Much Choice Is in a Distribution?",
+  "hook": "You will build a small probability distribution and watch Shannon's entropy $H = -\\sum_i p_i \\log_2 p_i$ count, in bits, how uncertain the outcome is.",
+  "idea": "Shannon asks: given probabilities $p_1, \\dots, p_n$ for a set of possible events, how much **choice** is involved in seeing which one occurs? He requires three things of any such measure $H$: it should be continuous in the $p_i$; it should increase with $n$ when all outcomes are equally likely; and breaking a choice into two successive choices should give the same total as one step. Theorem 2 says only one family of functions does this: $H = -K \\sum_i p_i \\log p_i$.\n\nWith $\\log$ base 2 the constant $K$ just fixes the unit, and that unit is the **bit**. Each term $-p_i \\log_2 p_i$ is that outcome's contribution: an outcome with tiny probability contributes little (it is rarely chosen), and an outcome with probability 1 contributes nothing (there is no choice at all).\n\nTwo properties make the formula easy to sanity-check. First, $H = 0$ exactly when one $p_i$ equals 1 and the rest are 0 — certainty means no uncertainty. Second, for fixed $n$, $H$ is largest when all $p_i = 1/n$, and then $H = \\log_2 n$: two equally likely outcomes give 1 bit, four give 2 bits.\n\nIn the playground you set the number of outcomes and their weights. The weights are normalized into probabilities, so you can type any non-negative numbers and the page shows the resulting $p_i$, each contribution $-p_i \\log_2 p_i$, and the total $H$.",
+  "why": "Entropy is the currency of information theory: it is the average number of bits needed to describe an outcome, and it is the limit that compression and coding schemes approach. It also gives engineers a single number for how spread out or peaked a distribution is, which is why it reappears in coding, machine learning and statistical physics.",
+  "equations": [
+   {
+    "tex": "H = -K \\sum_{i=1}^{n} p_i \\log p_i",
+    "caption": "Theorem 2: the only measure of choice satisfying Shannon's three requirements. $K$ is a positive constant that only sets the unit."
+   },
+   {
+    "tex": "H = -\\sum_{i=1}^{n} p_i \\log_2 p_i",
+    "caption": "The same formula with base-2 logarithms and $K=1$; the unit is then the bit."
+   },
+   {
+    "tex": "H = 0 \\iff p_i = 1 \\text{ for one } i, \\; p_j = 0 \\text{ otherwise}",
+    "caption": "Property (1): entropy vanishes exactly when the outcome is certain."
+   },
+   {
+    "tex": "H \\le \\log_2 n, \\quad H = \\log_2 n \\iff p_i = 1/n \\; \\forall i",
+    "caption": "Property (2): for fixed $n$ the maximum is $\\log_2 n$, attained by the uniform distribution."
+   },
+   {
+    "tex": "H = -(p \\log_2 p + q \\log_2 q), \\quad q = 1-p",
+    "caption": "The two-outcome case Shannon plots in Fig. 7; it peaks at 1 bit when $p = q = 1/2$."
+   }
+  ],
+  "symbols": [
+   {
+    "symbol": "n",
+    "meaning": "number of possible events/outcomes",
+    "demo": "the $n$ control; it sets the length of the weight vector"
+   },
+   {
+    "symbol": "p_i",
+    "meaning": "probability of the $i$-th event, with $p_i \\ge 0$ and $\\sum_i p_i = 1$",
+    "demo": "the normalized probabilities shown in the left bar chart and in the $p_i$ readout"
+   },
+   {
+    "symbol": "H",
+    "meaning": "entropy: the measure of choice or uncertainty, in bits when the log is base 2",
+    "demo": "the total shown under the contribution bars and in the readout"
+   },
+   {
+    "symbol": "-p_i \\log_2 p_i",
+    "meaning": "the contribution of outcome $i$ to the total entropy",
+    "demo": "the right bar chart, one bar per outcome"
+   },
+   {
+    "symbol": "\\log_2 n",
+    "meaning": "the maximum entropy for $n$ outcomes, reached when all $p_i = 1/n$",
+    "demo": "the dashed reference line in both charts and the 'uniform reference' readout"
+   },
+   {
+    "symbol": "K",
+    "meaning": "positive constant fixing the unit of measure; $K=1$ with base-2 logs gives bits",
+    "demo": "fixed at 1 throughout the playground"
+   }
+  ],
+  "controls": [
+   {
+    "id": "n",
+    "type": "number",
+    "label": "number of outcomes $n$",
+    "min": 1.0,
+    "max": 6.0,
+    "step": 1.0,
+    "value": 4.0,
+    "help": "How many possible events there are. The weight vector is resized to match."
+   },
+   {
+    "id": "w",
+    "type": "vector",
+    "label": "weights $w_i$ (normalized to $p_i$)",
+    "length": "n",
+    "min": 0.0,
+    "max": 1.0,
+    "step": 0.05,
+    "value": [
+     0.25,
+     0.25,
+     0.25,
+     0.25
+    ],
+    "labels": [
+     "$w_1$",
+     "$w_2$",
+     "$w_3$",
+     "$w_4$",
+     "$w_5$",
+     "$w_6$"
+    ],
+    "fill": 0,
+    "help": "Any non-negative numbers; the page divides by their sum to get $p_i$."
+   },
+   {
+    "id": "preset",
+    "type": "select",
+    "label": "preset distribution",
+    "options": [
+     {
+      "value": "uniform",
+      "label": "uniform ($p_i = 1/n$)"
+     },
+     {
+      "value": "certain",
+      "label": "certain ($p_1 = 1$)"
+     },
+     {
+      "value": "skew",
+      "label": "skewed"
+     },
+     {
+      "value": "custom",
+      "label": "custom (use the sliders)"
+     }
+    ],
+    "value": "uniform",
+    "help": "Choosing a preset overwrites the weights; move a slider to go back to custom."
+   }
+  ],
+  "visual_caption": "Left panel: one bar per outcome showing its probability $p_i$ (blue), with a dashed line at the uniform level $1/n$. Right panel: one bar per outcome showing its entropy contribution $-p_i \\log_2 p_i$ (green), with a dashed line at the maximum $\\log_2 n$; the contributions sum to the total $H$ printed below. The tallest contribution bar is outlined.",
+  "explorations": [
+   {
+    "title": "Certainty gives zero bits",
+    "preset": {
+     "n": 4,
+     "preset": "certain",
+     "w": [
+      1,
+      0,
+      0,
+      0
+     ]
+    },
+    "change": "Set the preset to **certain** (or drag $w_1$ to 1 and the rest to 0).",
+    "observe": "The left chart shows one bar of height 1 and three of height 0. Every contribution bar in the right chart has height 0, and the total $H$ reads 0 bits.",
+    "why": "When one $p_i = 1$ the outcome is known in advance, so there is no choice to measure. Formally $-1 \\cdot \\log_2 1 = 0$ and the zero-probability terms are defined as 0, so the whole sum is 0 — Shannon's Property (1)."
+   },
+   {
+    "title": "Uniform distributions give $\\log_2 n$ bits",
+    "preset": {
+     "n": 4,
+     "preset": "uniform",
+     "w": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+     ]
+    },
+    "change": "Start at $n = 4$ with the uniform preset, then change $n$ to 2, then to 3, then to 6 (re-choosing the uniform preset each time).",
+    "observe": "The total $H$ and the dashed reference line both move: $n=2$ gives 1 bit, $n=4$ gives 2 bits, $n=6$ gives about 2.585 bits. The 'uniform reference $\\log_2 n$' readout always equals the total $H$ when the bars are level.",
+    "why": "For equal probabilities each term is $-(1/n)\\log_2(1/n) = (\\log_2 n)/n$, and summing $n$ of them gives $\\log_2 n$. This is Shannon's Property (2): more equally likely events means more uncertainty, and the growth is logarithmic, so doubling $n$ adds exactly one bit."
+   }
+  ],
+  "pitfall": {
+   "kind": "misconception",
+   "title": "Entropy is not the number of outcomes",
+   "text": "A distribution over 6 outcomes can have less entropy than one over 2 outcomes: if the 6-outcome distribution is very peaked, $H$ can be near 0, while two equally likely outcomes give exactly 1 bit. Entropy measures how **spread out** the probability mass is, not how many outcomes exist. The maximum $\\log_2 n$ is only reached in the uniform case."
+  },
+  "grounding": {
+   "paper": "A Mathematical Theory of Communication (C. E. Shannon, 1948)",
+   "section": "Section 6, Choice, Uncertainty and Entropy (Theorem 2 and Properties (1)-(2))",
+   "from_source": [
+    "Shannon considers a set of possible events with known probabilities $p_1, \\dots, p_n$ and asks for a measure $H(p_1, \\dots, p_n)$ of how much choice or uncertainty is involved.",
+    "He requires: (1) $H$ is continuous in the $p_i$; (2) if all $p_i$ are equal then $H$ is a monotonic increasing function of $n$; (3) breaking a choice into two successive choices makes the original $H$ the weighted sum of the individual values.",
+    "Theorem 2: the only $H$ satisfying these assumptions is $H = -K \\sum_{i=1}^n p_i \\log p_i$, with $K$ a positive constant amounting to a choice of unit.",
+    "With logarithms to base 2 the unit is the bit.",
+    "Property (1): $H = 0$ if and only if all $p_i$ but one are zero, that one having the value unity; only when the outcome is certain does $H$ vanish, otherwise $H$ is positive.",
+    "Property (2): for a given $n$, $H$ is a maximum equal to $\\log n$ when all $p_i$ are equal to $1/n$, which is also intuitively the most uncertain situation.",
+    "For two possibilities with probabilities $p$ and $q = 1-p$, $H = -(p \\log p + q \\log q)$, plotted as a function of $p$ in Fig. 7."
+   ],
+   "our_additions": [
+    "The interactive playground, the weight-normalization step (entering arbitrary non-negative $w_i$ and dividing by their sum), and the choice of base-2 logs with $K=1$.",
+    "The convention $0 \\log_2 0 = 0$ used to handle zero probabilities numerically.",
+    "The specific toy values in the presets and tests (e.g. $n=4$ uniform, the skewed distribution).",
+    "The bar-chart visual, the contribution decomposition $-p_i \\log_2 p_i$, and the framing of entropy as 'how spread out the mass is'."
+   ],
+   "disclaimer": "This page is a toy illustration of the entropy formula and its two stated properties. It does not reproduce Shannon's experiments or any coding results; all numbers shown come from evaluating $H = -\\sum_i p_i \\log_2 p_i$ on the distribution you set."
+  },
+  "tests": [
+   {
+    "name": "certain outcome gives H = 0",
+    "state": {
+     "n": 4,
+     "preset": "certain",
+     "w": [
+      1,
+      0,
+      0,
+      0
+     ]
+    },
+    "expect": [
+     {
+      "path": "H",
+      "value": 0,
+      "tol": 1e-09
+     },
+     {
+      "path": "p.0",
+      "value": 1,
+      "tol": 1e-09
+     },
+     {
+      "path": "contrib.0",
+      "value": 0,
+      "tol": 1e-09
+     }
+    ]
+   },
+   {
+    "name": "four equally likely outcomes give 2 bits",
+    "state": {
+     "n": 4,
+     "preset": "uniform",
+     "w": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+     ]
+    },
+    "expect": [
+     {
+      "path": "H",
+      "value": 2,
+      "tol": 1e-09
+     },
+     {
+      "path": "log2n",
+      "value": 2,
+      "tol": 1e-09
+     },
+     {
+      "path": "contrib.0",
+      "value": 0.5,
+      "tol": 1e-09
+     }
+    ]
+   },
+   {
+    "name": "two equally likely outcomes give 1 bit",
+    "state": {
+     "n": 2,
+     "preset": "uniform",
+     "w": [
+      0.5,
+      0.5
+     ]
+    },
+    "expect": [
+     {
+      "path": "H",
+      "value": 1,
+      "tol": 1e-09
+     },
+     {
+      "path": "log2n",
+      "value": 1,
+      "tol": 1e-09
+     }
+    ]
+   },
+   {
+    "name": "zero probabilities contribute nothing and H stays below log2 n",
+    "state": {
+     "n": 3,
+     "preset": "custom",
+     "w": [
+      0.5,
+      0.5,
+      0
+     ]
+    },
+    "expect": [
+     {
+      "path": "contrib.2",
+      "value": 0,
+      "tol": 1e-09
+     },
+     {
+      "path": "H",
+      "value": 1,
+      "tol": 1e-09
+     },
+     {
+      "path": "log2n",
+      "value": 1.584962500721156,
+      "tol": 1e-09
+     }
+    ]
+   }
+  ]
+ },
+ "code": "// ---------- helpers ----------\nfunction safeLog2(x) {\n  return x <= 0 ? 0 : Math.log2(x);\n}\n\n// Normalize weights into a probability vector; fall back to uniform if all zero.\nfunction normalizeWeights(w) {\n  const n = w.length;\n  let s = 0;\n  for (let i = 0; i < n; i++) {\n    const v = Number(w[i]);\n    s += (isFinite(v) && v > 0) ? v : 0;\n  }\n  if (s <= 0) {\n    return L.range(n).map(() => 1 / n);\n  }\n  return w.map(v => {\n    const x = Number(v);\n    return (isFinite(x) && x > 0) ? x / s : 0;\n  });\n}\n\n// ---------- compute ----------\nfunction compute(s) {\n  const n = Math.max(1, Math.min(6, Math.round(Number(s.n) || 1)));\n  let w = Array.isArray(s.w) ? s.w.slice(0, n) : [];\n  while (w.length < n) w.push(0);\n  w = w.map(v => {\n    const x = Number(v);\n    return (isFinite(x) && x > 0) ? x : 0;\n  });\n\n  const p = normalizeWeights(w);\n  const contrib = p.map(pi => (pi <= 0 ? 0 : -pi * safeLog2(pi)));\n  let H = 0;\n  for (let i = 0; i < contrib.length; i++) H += contrib[i];\n  if (!isFinite(H)) H = 0;\n\n  const log2n = safeLog2(n);\n  const uniform = p.map(() => 1 / n);\n  const uniformContrib = uniform.map(pi => -pi * safeLog2(pi));\n\n  // how far from uniform (max |p_i - 1/n|)\n  let dev = 0;\n  for (let i = 0; i < n; i++) dev = Math.max(dev, Math.abs(p[i] - 1 / n));\n\n  const maxContribIdx = L.argmax(contrib);\n  const sumP = L.sum(p);\n\n  return {\n    n: n,\n    w: w,\n    p: p,\n    contrib: contrib,\n    H: H,\n    log2n: log2n,\n    uniform: uniform,\n    uniformContrib: uniformContrib,\n    dev: dev,\n    maxContribIdx: maxContribIdx,\n    sumP: sumP,\n    isUniform: dev < 1e-9,\n    isCertain: p.some(pi => pi > 1 - 1e-9)\n  };\n}\n\n// ---------- render ----------\nfunction render(s, r) {\n  const w = 740, h = 360;\n  const n = r.n;\n  const padL = 60, padR = 20, padT = 46, padB = 60;\n  const gap = 34;\n  const panelW = (w - padL - padR - gap) / 2;\n  const panelH = h - padT - padB;\n\n  const leftX = padL, rightX = padL + panelW + gap;\n  const topY = padT;\n\n  const colors = L.range(n).map(i => L.color(i));\n\n  // ---- left panel: probabilities ----\n  const maxP = Math.max(1 / n, L.max(r.p), 1e-9);\n  const leftBars = L.bars({\n    x: leftX, y: topY, w: panelW, h: panelH,\n    values: r.p,\n    labels: L.range(n).map(i => \"p\" + (i + 1)),\n    title: \"probabilities $p_i$\",\n    yLabel: \"probability\",\n    min: 0, max: maxP,\n    colors: colors,\n    highlight: r.maxContribIdx,\n    fmt: v => L.fmt(v, 3),\n    refLines: [{ value: 1 / n, label: \"1/n = \" + L.fmt(1 / n, 3) }]\n  });\n\n  // ---- right panel: contributions ----\n  const maxC = Math.max(L.max(r.contrib), L.max(r.uniformContrib), 1e-9);\n  const rightBars = L.bars({\n    x: rightX, y: topY, w: panelW, h: panelH,\n    values: r.contrib,\n    labels: L.range(n).map(i => \"-p\" + (i + 1) + \" log2 p\" + (i + 1)),\n    title: \"contributions $-p_i \\\\log_2 p_i$\",\n    yLabel: \"bits\",\n    min: 0, max: maxC,\n    colors: colors.map(c => \"#2e8b57\"),\n    highlight: r.maxContribIdx,\n    fmt: v => L.fmt(v, 3),\n    refLines: [{ value: r.log2n, label: \"log2 n = \" + L.fmt(r.log2n, 3) }]\n  });\n\n  // ---- header text ----\n  const head = L.text(w / 2, 22,\n    \"H = \" + L.fmt(r.H, 4) + \" bits    |    log2 n = \" + L.fmt(r.log2n, 4) + \" bits    |    n = \" + n,\n    { size: 15, anchor: \"middle\", weight: \"bold\", color: \"#1a1a1a\" });\n\n  const foot = L.text(w / 2, h - 16,\n    \"sum p_i = \" + L.fmt(r.sumP, 4) + \"    |    sum of contributions = \" + L.fmt(L.sum(r.contrib), 4),\n    { size: 13, anchor: \"middle\", color: \"#444\" });\n\n  return L.svg(w, h, head + leftBars + rightBars + foot);\n}\n\n// ---------- show ----------\nfunction show(s, r) {\n  const n = r.n;\n  const rows = [];\n  rows.push({\n    label: \"number of outcomes n\",\n    value: n,\n    digits: 0,\n    note: \"length of the probability vector\"\n  });\n  rows.push({\n    label: \"probabilities p_i\",\n    value: r.p,\n    digits: 4,\n    note: \"weights normalized so they sum to 1\",\n    colLabels: L.range(n).map(i => \"p\" + (i + 1))\n  });\n  rows.push({\n    label: \"contributions -p_i log2 p_i\",\n    value: r.contrib,\n    digits: 4,\n    note: \"each outcome's share of the entropy, in bits\",\n    colLabels: L.range(n).map(i => \"c\" + (i + 1)),\n    highlight: r.maxContribIdx\n  });\n  rows.push({\n    label: \"total entropy H\",\n    value: r.H,\n    digits: 4,\n    note: \"sum of the contributions; 0 bits means certainty\",\n    highlight: 0\n  });\n  rows.push({\n    label: \"uniform reference log2 n\",\n    value: r.log2n,\n    digits: 4,\n    note: \"maximum possible H for this n\"\n  });\n  rows.push({\n    label: \"max |p_i - 1/n|\",\n    value: r.dev,\n    digits: 4,\n    note: \"0 exactly when the distribution is uniform\"\n  });\n  return rows;\n}\n\n// ---------- checks ----------\nfunction checks(s, r) {\n  const out = [];\n  const n = r.n;\n\n  out.push({\n    name: \"probabilities sum to 1\",\n    pass: Math.abs(r.sumP - 1) < 1e-9,\n    detail: \"sum p_i = \" + L.fmt(r.sumP, 6)\n  });\n\n  out.push({\n    name: \"H >= 0\",\n    pass: r.H >= -1e-9,\n    detail: \"H = \" + L.fmt(r.H, 6) + \" bits\"\n  });\n\n  out.push({\n    name: \"H = 0 iff exactly one p_i = 1\",\n    pass: (Math.abs(r.H) < 1e-9) === r.isCertain,\n    detail: \"H = \" + L.fmt(r.H, 6) + \", certain = \" + r.isCertain\n  });\n\n  out.push({\n    name: \"H <= log2 n, equality iff uniform\",\n    pass: (r.H <= r.log2n + 1e-9) && ((Math.abs(r.H - r.log2n) < 1e-9) === r.isUniform),\n    detail: \"H = \" + L.fmt(r.H, 6) + \", log2 n = \" + L.fmt(r.log2n, 6) + \", uniform = \" + r.isUniform\n  });\n\n  out.push({\n    name: \"sum of contributions equals H\",\n    pass: Math.abs(L.sum(r.contrib) - r.H) < 1e-9,\n    detail: \"sum c_i = \" + L.fmt(L.sum(r.contrib), 6) + \", H = \" + L.fmt(r.H, 6)\n  });\n\n  let zeroOk = true;\n  for (let i = 0; i < n; i++) {\n    if (r.p[i] <= 0 && Math.abs(r.contrib[i]) > 1e-12) zeroOk = false;\n  }\n  out.push({\n    name: \"zero probabilities contribute exactly 0\",\n    pass: zeroOk,\n    detail: \"0 log2 0 treated as 0\"\n  });\n\n  return out;\n}"
+}
