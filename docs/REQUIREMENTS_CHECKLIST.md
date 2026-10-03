@@ -6,10 +6,12 @@ Every requirement line of [hakathon_requirements.md](hakathon_requirements.md), 
 
 **How it was verified (2026-10-03):**
 
-- **Clean-machine test:** a fresh `git clone` of commit `6663945`, a brand-new Python 3.11.15 virtual environment, then exactly `python -m pip install -r requirements.txt` and `python agent.py --input case.json --output out --model deepseek/deepseek-v4.1-flash`. Result: exit 0 in 35 s.
-- **Output validator:** [`tools/check_output.py`](../tools/check_output.py) mechanically checks an output folder against the section 5 rules (30 checks). It passes on the clean-machine output and on every regression run.
+- **Clean-machine tests:** a fresh `git clone` from GitHub, a brand-new virtual environment, then exactly `python -m pip install -r requirements.txt` and `python agent.py --input case.json --output out --model deepseek/deepseek-v4.1-flash`. Exit 0 on Windows 11 (CPython 3.11.9) and on Ubuntu Linux (CPython 3.11.17).
+- **Assessment simulation:** all 6 practice cases, each run twice into a fresh output folder. 12 of 12 exited 0 with no remaining problems, using 1–3 requests, at most 18.5k completion tokens, and 11–49 s.
+- **Output validator:** [`tools/check_output.py`](../tools/check_output.py) mechanically checks an output folder against the section 5 rules (30 checks). It passed on every run above.
 - **Unit tests:** `python -m unittest discover -s tests` passes 29 tests (parsing, TeX, JavaScript execution checks).
-- **Browser tests:** in Chromium, every control was moved to its minimum and maximum and every exploration button was clicked. There were no errors, no failing live checks, and zero external network requests.
+- **Browser tests:** every generated page was served locally in Chromium. Every button was clicked and every control moved to its minimum and maximum. There were no errors, zero network requests, and no sideways page scrolling from 375 to 1920 px wide.
+- **Error paths:** a missing key, invalid JSON, a missing required field and a missing input file each exit with code 2, and a rejected key exits with 1. A trace is written every time and never contains the key.
 
 ---
 
@@ -77,13 +79,13 @@ Every requirement line of [hakathon_requirements.md](hakathon_requirements.md), 
 
 | Requirement | Status | Evidence |
 |---|---|---|
-| Use Python 3.11 | ✅ | `.python-version`. The clean-machine test ran on CPython 3.11.15. |
+| Use Python 3.11 | ✅ | `.python-version`. The clean-machine tests ran on CPython 3.11.9 (Windows) and 3.11.17 (Linux). |
 | `agent.py` at the repository root | ✅ | [`agent.py`](../agent.py) |
 | Pinned dependencies in `requirements.txt` | ✅ | All `==`, including indirect dependencies. |
 | Helper files and generic templates may be included | ✅ | `p2p/`, `templates/`, `tools/` |
 | Any Python framework; a simple agent loop using requests is sufficient | ✅ | `requests` (plus `mini-racer` for running the JavaScript checks). |
 | No GPU | ✅ | None used. |
-| No system-package installation | ✅ | `mini-racer` installs as a prebuilt wheel (Windows, Linux x86-64 and ARM, macOS). Verified in the clean environment. |
+| No system-package installation | ✅ | Every pinned package has a prebuilt wheel for Python 3.11 on Windows, Linux (x86-64 and ARM, glibc and musl) and macOS, so nothing is compiled. Installed cleanly on Windows and Linux. |
 | No external server | ✅ | Only OpenRouter is called. |
 | No manual setup beyond installing `requirements.txt` | ✅ | The clean-machine test needed only the two official commands, plus the key environment variable. |
 | Exactly this command interface | ✅ | `--input`, `--output` and `--model`, all required (`agent.py`, `parse_args`). Verified verbatim. |
@@ -127,7 +129,7 @@ Every requirement line of [hakathon_requirements.md](hakathon_requirements.md), 
 | Requirement | Status | Evidence |
 |---|---|---|
 | Submit the GitHub repository URL and **full** commit SHA before the session ends | ⏳ | After the final commit, run `git rev-parse HEAD` (40 characters). |
-| Ensure the instructor can read the repository | ⏳ | Make the repository public, or add the instructor as a collaborator. |
+| Ensure the instructor can read the repository | ✅ | The repository is public; its files were downloaded without logging in and match the commit. |
 | That commit is final | ⏳ | Finish everything before taking the SHA. |
 | Include `agent.py` | ✅ | — |
 | Include `requirements.txt` | ✅ | — |
@@ -135,7 +137,7 @@ Every requirement line of [hakathon_requirements.md](hakathon_requirements.md), 
 | README with architecture | ✅ | README, "Architecture": pipeline, checks, revisions, limits, trace, repository layout |
 | README with setup | ✅ | — |
 | README with reuse credits | ✅ | README, "Reuse credits" |
-| One example input/output pair | ✅ | [`examples/attention/`](../examples/attention/): `case.json`, `out/index.html` and `out/trace.jsonl`, produced by the exact command (exit 0, 1 request, about 8.8k tokens, about 20 s) and passing `tools/check_output.py`. |
+| One example input/output pair | ✅ | [`examples/attention/`](../examples/attention/): `case.json`, `out/index.html` and `out/trace.jsonl`, produced by the exact command (exit 0, 2 requests including one revision, about 20.6k tokens, about 28 s) and passing `tools/check_output.py`. |
 | No separate presentation or hosted website | ➖ | — |
 
 ## 7. Assessment and ranking

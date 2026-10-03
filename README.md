@@ -28,7 +28,7 @@ python agent.py --input case.json --output out --model deepseek/deepseek-v4.1-fl
 
 ## Example input/output pair
 
-[`examples/attention/`](examples/attention/) holds `case.json` (Attention Is All You Need, Section 3.2.1) and the `out/` it produced with the command above: 1 API request, about 8.8k tokens, about 20 s.
+[`examples/attention/`](examples/attention/) holds `case.json` (Attention Is All You Need, Section 3.2.1) and the `out/` it produced with the command above: 2 API requests, about 20.6k tokens, about 28 s. Its trace shows the check-and-revise loop working: the first version's `checks()` crashed when run in V8, the error was sent back in one revision, and the fixed version passed every check.
 
 ## Architecture
 

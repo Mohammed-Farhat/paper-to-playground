@@ -108,7 +108,10 @@
   table.p2p-matrix-input { border-collapse: separate; border-spacing: 4px; margin: 8px 0 0; }
   table.p2p-matrix-input th { color: var(--muted); font: 11px var(--mono); padding: 3px; }
   table.p2p-matrix-input td { padding: 0; }
-  table.p2p-matrix-input .p2p-num { min-width: 64px; width: 64px; }
+  table.p2p-matrix-input .p2p-num { min-width: 64px; width: 64px; padding-inline: 6px; -moz-appearance: textfield; }
+  /* No spin arrows in matrix cells, so values like -0.25 fit (arrow keys still step). */
+  table.p2p-matrix-input .p2p-num::-webkit-inner-spin-button,
+  table.p2p-matrix-input .p2p-num::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
   #p2p-reset, .p2p-try { min-height: 44px; padding: 10px 16px; font: 600 13px/1.5 system-ui, sans-serif; border-radius: 8px; cursor: pointer; }
   .p2p-presets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
   .p2p-preset-btn { min-height: 40px; padding: 8px 12px; font: 600 13px/1.4 system-ui, sans-serif; border-radius: 8px; cursor: pointer; background: var(--accent-soft); color: var(--accent-dark); border: 1px solid #cfc3f2; }
@@ -184,6 +187,7 @@
   @media (min-width: 1280px) {
     .pg-grid { grid-template-columns: 280px minmax(0, 1fr); }
     #p2p-controls { grid-template-columns: minmax(0, 1fr); }
+    table.p2p-matrix-input { border-spacing: 3px; } /* a 3-column matrix fits the side column without a scrollbar */
     .pg-visual { position: sticky; top: 84px; }
   }
   @media (max-width: 1000px) {
