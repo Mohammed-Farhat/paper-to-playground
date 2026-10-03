@@ -1,9 +1,10 @@
-"""Rebuild index.html from a saved page_spec.json with the current template.
+"""Rebuild a page from a saved page_spec.json with the current template.
 
-For design work: no API key, no tokens. A page_spec.json is written next to
-index.html when the agent runs with the environment variable P2P_SAVE_SPEC=1.
+For design work: no API key, no tokens. Writes preview.html (ignored by git)
+next to the saved spec, so tracked files are never modified. A page_spec.json
+is written next to index.html when the agent runs with P2P_SAVE_SPEC=1.
 
-    python tools/rerender.py runs/attention1
+    python tools/rerender.py docs/fixtures/attention
 """
 
 from __future__ import annotations
@@ -24,8 +25,8 @@ def main() -> int:
     folder = Path(sys.argv[1])
     data = json.loads((folder / "page_spec.json").read_text(encoding="utf-8"))
     page = build_page(data["spec"], data["code"], data["case"], data.get("excerpt", ""))
-    (folder / "index.html").write_text(page, encoding="utf-8")
-    print(f"wrote {folder / 'index.html'} ({len(page)} chars)")
+    (folder / "preview.html").write_text(page, encoding="utf-8")
+    print(f"wrote {folder / 'preview.html'} ({len(page)} chars)")
     return 0
 
 

@@ -12,6 +12,7 @@ venv/
 out/
 out_*/
 runs/
+preview.html
 
 # Local tool settings
 .claude/
