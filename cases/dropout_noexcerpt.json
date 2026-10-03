@@ -1,0 +1,5 @@
+{
+  "source_url": "https://arxiv.org/abs/1207.0580",
+  "focus": "Explain dropout as described in 'Improving neural networks by preventing co-adaptation of feature detectors' (Hinton et al., 2012): during training each hidden unit is dropped with probability p, and at test time all units are used with their outgoing weights scaled to match the expected training-time input. Let the learner set the dropout probability and a small vector of unit activations and weights, sample nothing randomly but enumerate or compute the expectation over masks, and compare the expected training-time input of the next unit with the scaled test-time input. Check that the two are equal for every p. Do not train a network.",
+  "audience": "Engineering undergraduate who knows expected values and weighted sums but has not studied neural network regularization."
+}

@@ -3,213 +3,343 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Entropy: How Much Choice Is in a Distribution?</title>
+<title>Entropy: How Much Choice Is in a Distribution? — Paper to Playground</title>
 <style>
   :root {
-    --bg: #f6f7f9;
+    color-scheme: light;
+    --bg: #f7f5f0;
     --card: #ffffff;
-    --ink: #1f2933;
-    --muted: #52606d;
-    --line: #e4e7eb;
-    --accent: #0b5cad;
-    --accent-soft: #e8f1fb;
-    --ok: #1a7f37;
-    --bad: #c62828;
-    --warn-soft: #fff6e5;
-    --warn: #b26a00;
-    --radius: 10px;
+    --ink: #202332;
+    --muted: #596173;
+    --line: #dddde4;
+    --control-line: #788195;
+    --accent: #5b3fc4;
+    --accent-dark: #432b9b;
+    --accent-soft: #eee9ff;
+    --ok: #176849;
+    --ok-soft: #eef7f2;
+    --bad: #b4233c;
+    --bad-soft: #fff0f2;
+    --warn: #815014;
+    --warn-soft: #f8efdf;
+    --radius: 18px;
+    --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
   }
   * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body {
-    margin: 0; background: var(--bg); color: var(--ink);
-    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  html { scroll-behavior: smooth; scroll-padding-top: 90px; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  [hidden] { display: none !important; }
+  a { color: var(--accent); text-underline-offset: 4px; }
+  a:hover { color: var(--accent-dark); }
+  button, input, select, summary { -webkit-tap-highlight-color: transparent; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+  .wrap { width: min(100%, 1376px); margin-inline: auto; padding-inline: 40px; }
+  .skip-link { position: absolute; left: 24px; top: 12px; z-index: 20; padding: 10px 18px; background: var(--ink); color: white; transform: translateY(-180%); }
+  .skip-link:focus { transform: translateY(0); color: white; }
+  .masthead { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-block: 24px; border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 750; letter-spacing: -.035em; }
+  .brand-mark { width: 32px; height: 32px; display: grid; place-items: center; background: var(--ink); color: white; border-radius: 9px; font: 600 17px var(--mono); letter-spacing: -3px; padding-right: 3px; }
+  .masthead-note { color: var(--muted); font-size: 13px; }
+  .hero-body { padding-block: 42px 38px; }
+  .kicker, .eyebrow { margin: 0; color: var(--accent); font-size: 11px; font-weight: 750; letter-spacing: .13em; text-transform: uppercase; }
+  h1 { max-width: 1050px; margin: 16px 0 18px; font: 500 clamp(34px, 4.3vw, 58px)/1.1 Georgia, "Times New Roman", serif; letter-spacing: -.045em; text-wrap: balance; overflow-wrap: anywhere; }
+  .hook { max-width: 810px; color: var(--muted); font-size: 18px; line-height: 1.65; margin: 0 0 24px; }
+  .hero-bottom { display: flex; align-items: center; gap: 28px; }
+  .hero-link { display: inline-flex; align-items: center; gap: 20px; flex-shrink: 0; min-height: 48px; padding: 10px 20px; border-radius: 9px; background: var(--accent); color: white; text-decoration: none; font-size: 14px; font-weight: 650; }
+  .hero-link:hover { color: white; background: var(--accent-dark); }
+  .meta { max-width: 650px; margin: 0; color: var(--muted); font-size: 13px; }
+  .toc { position: sticky; top: 0; z-index: 5; background: var(--bg); border-block: 1px solid var(--line); }
+  .toc .wrap { display: flex; flex-wrap: wrap; column-gap: 30px; }
+  .toc a { display: inline-flex; align-items: center; gap: 8px; min-height: 54px; font-size: 13px; font-weight: 600; color: var(--muted); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { font: 11px var(--mono); color: var(--accent); }
+  main.wrap { padding-block: 40px 48px; }
+  section.card { scroll-margin-top: 18px; margin-bottom: 26px; padding: 32px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); min-width: 0; }
+  .section-heading { display: flex; align-items: center; gap: 13px; margin-bottom: 26px; }
+  .section-index { display: grid; place-items: center; flex-shrink: 0; width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 50%; font: 12px var(--mono); color: var(--muted); }
+  h2 { margin: 0; font-size: 23px; line-height: 1.35; letter-spacing: -.035em; font-weight: 700; overflow-wrap: anywhere; }
+  h3 { font-size: 16px; line-height: 1.5; margin: 24px 0 10px; font-weight: 700; }
+  p { margin: 0 0 14px; }
+  p:last-child { margin-bottom: 0; }
+  .idea-layout { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 40px; align-items: start; }
+  .idea-copy { max-width: 72ch; }
+  .idea-copy > h3 { margin-top: 26px; }
+  .equation-panel { min-width: 0; }
+  .equations { display: grid; gap: 12px; }
+  .equation { background: #f6f4fb; border: 1px solid #e4dff2; border-radius: 12px; padding: 20px; min-width: 0; }
+  .equation math[display="block"] { display: block; overflow-x: auto; padding-block: 6px; font-size: 1.2em; margin: 0 0 12px; }
+  .equation .caption { font-size: 13px; color: var(--muted); margin: 0; }
+  math { font-size: 1.06em; }
+  .table-scroll { overflow-x: auto; }
+  table.symbols { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.symbols th, table.symbols td { padding: 13px 16px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+  table.symbols th { background: #f7f7f9; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .065em; }
+  table.symbols td.sym { width: 12%; font-size: 19px; color: var(--accent); }
+  table.symbols tr:last-child td { border-bottom: 0; }
+  /* Give the mechanism the full reading width until a side panel can fit comfortably. */
+  #p2p-playground { padding: 0; border-color: #c8bfdc; overflow: clip; }
+  .playground-heading { padding: 28px 32px; margin: 0; border-bottom: 1px solid var(--line); background: #f5f2fc; }
+  .playground-heading .section-index { background: var(--accent); color: white; border-color: var(--accent); }
+  .section-subtitle { margin-top: 4px; color: var(--muted); font-size: 14px; }
+  .pg-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; padding: 28px 32px; align-items: start; }
+  .pg-grid > *, .pg-outputs > * { min-width: 0; }
+  .pg-controls { background: #f8f8fa; border: 1px solid var(--line); border-radius: 12px; padding: 20px; min-width: 0; }
+  .panel-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+  .panel-heading h3 { margin: 0; }
+  .panel-heading .eyebrow { color: var(--muted); font-size: 10px; }
+  #p2p-controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; align-items: start; }
+  .p2p-control { min-width: 0; }
+  .p2p-control-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+  .p2p-label { font-weight: 650; font-size: 14px; }
+  .p2p-readout { color: var(--accent); font: 600 13px var(--mono); text-align: right; min-width: 3em; }
+  .p2p-range { display: block; width: 100%; min-width: 0; height: 44px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+  .p2p-num { width: 5.2em; max-width: 100%; min-height: 44px; border: 1px solid var(--control-line); border-radius: 7px; padding: 8px; background: white; color: var(--ink); font: 14px var(--mono); font-variant-numeric: tabular-nums; }
+  .p2p-control-number > .p2p-num { width: 100%; }
+  .p2p-num:hover, .p2p-select:hover { border-color: var(--accent); }
+  .p2p-num.p2p-invalid { border: 2px solid var(--bad); background: var(--bad-soft); }
+  .p2p-select { min-height: 44px; width: 100%; max-width: 100%; margin-top: 6px; padding: 8px; border: 1px solid var(--control-line); border-radius: 7px; background: white; color: var(--ink); font: inherit; font-size: 14px; }
+  .p2p-toggle { display: flex; gap: 10px; align-items: center; min-height: 44px; cursor: pointer; }
+  .p2p-toggle input { width: 20px; height: 20px; margin: 0; flex-shrink: 0; accent-color: var(--accent); }
+  .p2p-help { margin-top: 8px; color: var(--muted); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+  .p2p-vector { display: grid; gap: 5px; margin-top: 10px; }
+  .p2p-vector-item { display: grid; grid-template-columns: minmax(24px, auto) minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+  .p2p-vector-name { font: 12px var(--mono); color: var(--muted); }
+  .p2p-control-matrix { overflow-x: auto; padding: 5px 5px 10px; }
+  table.p2p-matrix-input { border-collapse: separate; border-spacing: 4px; margin: 8px 0 0; }
+  table.p2p-matrix-input th { color: var(--muted); font: 11px var(--mono); padding: 3px; }
+  table.p2p-matrix-input td { padding: 0; }
+  table.p2p-matrix-input .p2p-num { min-width: 64px; width: 64px; }
+  #p2p-reset, .p2p-try { min-height: 44px; padding: 10px 16px; font: 600 13px/1.5 system-ui, sans-serif; border-radius: 8px; cursor: pointer; }
+  #p2p-reset { width: 100%; margin-top: 20px; background: white; color: var(--ink); border: 1px solid var(--control-line); }
+  #p2p-reset:hover { background: var(--accent-soft); border-color: var(--accent); }
+  .input-notice { display: none; margin-top: 12px; font-size: 13px; color: var(--bad); }
+  .pg-controls:has(.p2p-invalid) .input-notice { display: block; }
+  .pg-visual { margin: 0; min-width: 0; }
+  .visual-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px; }
+  .visual-heading h3 { margin: 0; }
+  .live-label { color: var(--ok); font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .live-label::before { content: ''; display: inline-block; width: 6px; height: 6px; background: currentColor; border-radius: 50%; margin-right: 6px; }
+  #p2p-visual { min-width: 0; width: 100%; overflow-x: auto; background: white; border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  #p2p-visual svg { display: block; margin-inline: auto; height: auto; }
+  .pg-visual .caption { margin-top: 14px; font-size: 13px; color: var(--muted); line-height: 1.7; }
+  .scroll-hint { display: none; margin: 0 0 10px; color: var(--muted); font-size: 12px; }
+  .pg-outputs { display: grid; grid-template-columns: minmax(0, 1fr) 286px; gap: 28px; padding: 28px 32px 32px; border-top: 1px solid var(--line); background: #fcfbfe; }
+  .pg-outputs h3 { margin: 0 0 16px; }
+  #p2p-values { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 12px; }
+  .p2p-value { min-width: 0; padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: white; }
+  .p2p-value-hl { border-color: #b0a0e3; background: #f4f0ff; box-shadow: inset 0 3px 0 var(--accent); }
+  .p2p-value-label { font-size: 12px; font-weight: 650; color: var(--muted); overflow-wrap: anywhere; }
+  .p2p-value-body { overflow-x: auto; margin-top: 8px; }
+  .p2p-value-note { color: var(--muted); font-size: 12px; margin-top: 8px; overflow-wrap: anywhere; }
+  .p2p-scalar { font: 500 25px/1.35 var(--mono); overflow-wrap: anywhere; }
+  table.p2p-matrix { border-collapse: collapse; font: 12px/1.6 var(--mono); margin-top: 3px; }
+  table.p2p-matrix td { padding: 7px; border: 1px solid var(--line); text-align: right; white-space: nowrap; }
+  table.p2p-matrix th { font-size: 11px; font-weight: 400; color: var(--muted); padding: 4px 7px; }
+  #p2p-checks { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+  #p2p-checks li { padding: 12px; margin-bottom: 8px; border-radius: 9px; border: 1px solid #d4e7dd; background: var(--ok-soft); overflow-wrap: anywhere; }
+  #p2p-checks li.p2p-fail { background: var(--bad-soft); border-color: #e3abb5; }
+  .p2p-mark { font-weight: 700; }
+  .p2p-pass .p2p-mark { color: var(--ok); }
+  .p2p-fail .p2p-mark { color: var(--bad); }
+  .p2p-pass .p2p-check-name::before { content: 'Pass · '; color: var(--ok); font-weight: 700; }
+  .p2p-fail .p2p-check-name::before { content: 'Fail · '; color: var(--bad); font-weight: 700; }
+  .p2p-check-detail { display: block; margin-top: 4px; font: 11px/1.7 var(--mono); color: var(--muted); }
+  .p2p-error { margin: 0 32px 24px; padding: 16px; color: var(--bad); background: var(--bad-soft); border: 1px solid var(--bad); border-radius: 10px; font-size: 14px; }
+  .explorations { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+  .p2p-exploration { display: flex; flex-direction: column; min-width: 0; padding: 24px; background: #fcfbfe; border: 1px solid var(--line); border-radius: 12px; }
+  .p2p-exploration.p2p-active { border-color: var(--accent); box-shadow: inset 0 3px 0 var(--accent); background: #f6f3ff; }
+  .p2p-exploration.p2p-active::before { content: 'Selected exploration'; color: var(--accent); font-size: 12px; font-weight: 650; margin-bottom: 8px; }
+  .p2p-exploration h3 { margin: 0; font-size: 18px; line-height: 1.45; letter-spacing: -.02em; }
+  .p2p-exploration dl { margin: 4px 0 24px; font-size: 14px; }
+  .p2p-exploration dt { margin-top: 18px; font-size: 10px; text-transform: uppercase; letter-spacing: .12em; font-weight: 750; color: var(--accent); }
+  .p2p-exploration dd { margin: 5px 0 0; }
+  .p2p-try { align-self: flex-start; margin-top: auto; border: 1px solid var(--accent); background: var(--accent); color: white; }
+  .p2p-try:hover { background: var(--accent-dark); }
+  section.caveat { background: var(--warn-soft); border-color: #e8d6b9; }
+  .caveat .section-index { border-color: #c8ab7f; color: var(--warn); }
+  .caveat h2 { color: var(--warn); font-size: 20px; }
+  .caveat .section-heading { margin-bottom: 16px; }
+  .caveat > p { max-width: 100ch; font-size: 15px; }
+  #grounding { font-size: 14px; overflow-wrap: anywhere; }
+  .ground-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; margin-top: 24px; }
+  .ground-grid > div { border-radius: 12px; padding: 24px; border: 1px solid; }
+  .from-source { background: var(--ok-soft); border-color: #c7dfd2 !important; }
+  .ours { background: #f5f1ff; border-color: #ddd2f3 !important; }
+  .ground-grid h3 { font-size: 15px; margin: 0 0 12px; }
+  .from-source h3 { color: var(--ok); }
+  .ours h3 { color: var(--accent); }
+  .ground-grid ul { margin: 0; padding-left: 18px; }
+  .ground-grid li + li { margin-top: 8px; }
+  .disclaimer { margin-top: 22px; padding-left: 16px; border-left: 3px solid #aca1c4; color: var(--muted); }
+  details.excerpt { margin-top: 24px; border-top: 1px solid var(--line); }
+  details.excerpt summary { padding: 16px 0; min-height: 48px; cursor: pointer; color: var(--accent); font-weight: 600; }
+  details.excerpt blockquote { margin: 0; padding: 20px; background: #f8f8fa; border-left: 2px solid var(--line); white-space: pre-wrap; color: var(--muted); }
+  footer.wrap { display: flex; align-items: baseline; gap: 32px; justify-content: space-between; padding-bottom: 32px; font-size: 12px; color: var(--muted); }
+  .footer-brand { flex-shrink: 0; font-weight: 650; color: var(--ink); }
+  footer p { max-width: 700px; }
+  code { background: #efedf3; padding: 2px 5px; border-radius: 4px; font: .9em var(--mono); }
+  @media (min-width: 1280px) {
+    .pg-grid { grid-template-columns: 280px minmax(0, 1fr); }
+    #p2p-controls { grid-template-columns: minmax(0, 1fr); }
+    .pg-visual { position: sticky; top: 84px; }
   }
-  header.hero { background: var(--card); border-bottom: 1px solid var(--line); padding: 28px 16px 20px; }
-  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
-  .kicker { margin: 0; color: var(--accent); font-weight: 600; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; }
-  h1 { margin: 6px 0 8px; font-size: clamp(26px, 4vw, 36px); line-height: 1.2; }
-  .hook { margin: 0 0 10px; font-size: 18px; color: var(--muted); max-width: 820px; }
-  .meta { margin: 0; font-size: 14px; color: var(--muted); }
-  nav.toc { position: sticky; top: 0; z-index: 5; background: rgba(246,247,249,.95); border-bottom: 1px solid var(--line); }
-  nav.toc .wrap { display: flex; gap: 6px 18px; flex-wrap: wrap; padding-top: 8px; padding-bottom: 8px; font-size: 14px; }
-  nav.toc a { color: var(--muted); text-decoration: none; }
-  nav.toc a:hover { color: var(--accent); }
-  main { padding: 20px 0 40px; }
-  section.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px 24px; margin: 0 0 18px; }
-  h2 { margin: 0 0 12px; font-size: 22px; }
-  h3 { margin: 18px 0 8px; font-size: 17px; }
-  p { margin: 0 0 10px; }
-  .equations { margin: 14px 0 4px; }
-  .equation { background: var(--accent-soft); border-radius: 8px; padding: 10px 14px; margin: 0 0 10px; }
-  .equation math[display="block"] { font-size: 1.25em; margin: 4px 0; }
-  .equation .caption { font-size: 14px; color: var(--muted); margin: 4px 0 0; }
-  math { font-size: 1.08em; }
-  table.symbols { border-collapse: collapse; width: 100%; font-size: 15px; }
-  table.symbols th, table.symbols td { border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
-  table.symbols th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .03em; }
-  table.symbols td.sym { white-space: nowrap; width: 1%; font-size: 1.1em; }
-
-  /* playground */
-  .pg-grid { display: grid; grid-template-columns: minmax(250px, 340px) 1fr; gap: 20px; align-items: start; }
-  .pg-controls { background: #fafbfc; border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
-  .pg-controls h3, .pg-outputs h3 { margin-top: 0; }
-  .pg-visual { min-width: 0; }
-  #p2p-visual { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 8px; overflow-x: auto; }
-  #p2p-visual svg { display: block; margin: 0 auto; height: auto; }
-  .pg-visual .caption { font-size: 14px; color: var(--muted); margin-top: 8px; }
-  .pg-outputs { display: grid; grid-template-columns: 1fr minmax(240px, 320px); gap: 20px; margin-top: 18px; }
-  .p2p-control { margin: 0 0 14px; }
-  .p2p-control-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
-  .p2p-label { font-weight: 600; font-size: 14px; }
-  .p2p-readout { font-variant-numeric: tabular-nums; font-size: 14px; color: var(--accent); min-width: 3.5em; text-align: right; }
-  .p2p-range { width: 100%; accent-color: var(--accent); }
-  .p2p-num { width: 4.8em; padding: 3px 4px; font: inherit; font-size: 14px; border: 1px solid #cbd2d9; border-radius: 4px; }
-  .p2p-num.p2p-invalid { border-color: var(--bad); background: #fdecea; }
-  .p2p-select { font: inherit; font-size: 14px; padding: 3px 6px; margin-top: 4px; width: 100%; }
-  .p2p-toggle { display: flex; gap: 8px; align-items: center; cursor: pointer; }
-  .p2p-toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
-  .p2p-help { font-size: 13px; color: var(--muted); margin-top: 3px; }
-  .p2p-vector { display: grid; gap: 4px; margin-top: 4px; }
-  .p2p-vector-item { display: grid; grid-template-columns: minmax(2.2em, auto) 1fr auto; gap: 8px; align-items: center; font-size: 14px; }
-  .p2p-vector-name { color: var(--muted); }
-  table.p2p-matrix-input { border-collapse: collapse; margin-top: 4px; }
-  table.p2p-matrix-input th { font-weight: 500; font-size: 13px; color: var(--muted); padding: 0 4px; }
-  table.p2p-matrix-input td { padding: 2px; }
-  #p2p-reset, .p2p-try { font: inherit; font-size: 14px; border-radius: 6px; cursor: pointer; padding: 6px 12px; }
-  #p2p-reset { background: #fff; border: 1px solid #cbd2d9; color: var(--ink); }
-  .p2p-try { background: var(--accent); border: 1px solid var(--accent); color: #fff; }
-  .p2p-try:hover { filter: brightness(1.1); }
-  #p2p-values { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
-  .p2p-value { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: #fff; min-width: 0; overflow-x: auto; }
-  .p2p-value-hl { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
-  .p2p-value-label { font-size: 13px; color: var(--muted); font-weight: 600; }
-  .p2p-value-note { font-size: 12px; color: var(--muted); margin-top: 2px; }
-  .p2p-scalar { font-size: 20px; font-variant-numeric: tabular-nums; }
-  table.p2p-matrix { border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 14px; margin-top: 2px; }
-  table.p2p-matrix td { border: 1px solid var(--line); padding: 2px 7px; text-align: right; }
-  table.p2p-matrix th { font-weight: 500; color: var(--muted); font-size: 12px; padding: 1px 5px; }
-  #p2p-checks { list-style: none; margin: 0; padding: 0; font-size: 14px; }
-  #p2p-checks li { padding: 6px 8px; border-radius: 6px; margin-bottom: 6px; }
-  #p2p-checks li.p2p-pass { background: #eaf6ec; }
-  #p2p-checks li.p2p-fail { background: #fdecea; }
-  .p2p-pass .p2p-mark { color: var(--ok); font-weight: 700; }
-  .p2p-fail .p2p-mark { color: var(--bad); font-weight: 700; }
-  .p2p-check-detail { display: block; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
-  .p2p-error { background: #fdecea; color: var(--bad); border-radius: 8px; padding: 10px 12px; margin-top: 12px; font-size: 14px; }
-
-  /* explorations, caveat, grounding */
-  .explorations { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .p2p-exploration { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
-  .p2p-exploration.p2p-active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
-  .p2p-exploration h3 { margin-top: 0; }
-  .p2p-exploration dl { margin: 8px 0 12px; }
-  .p2p-exploration dt { font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: .03em; color: var(--accent); margin-top: 8px; }
-  .p2p-exploration dd { margin: 2px 0 0; }
-  section.caveat { background: var(--warn-soft); border-color: #f3d9a4; }
-  section.caveat h2 { color: var(--warn); }
-  .ground-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 10px; }
-  .ground-grid > div { border-radius: 8px; padding: 12px 14px; }
-  .from-source { background: #eaf6ec; }
-  .ours { background: #f1f0fb; }
-  .ground-grid h3 { margin-top: 0; font-size: 15px; }
-  .ground-grid ul { margin: 0; padding-left: 20px; }
-  .disclaimer { font-size: 14px; color: var(--muted); border-left: 3px solid var(--line); padding-left: 10px; margin-top: 12px; }
-  details.excerpt { margin-top: 12px; font-size: 14px; }
-  details.excerpt blockquote { margin: 8px 0 0; padding: 10px 14px; background: #fafbfc; border-left: 3px solid var(--line); white-space: pre-wrap; }
-  footer { color: var(--muted); font-size: 13px; padding: 0 0 30px; }
-  code { background: #f0f2f4; padding: 1px 4px; border-radius: 4px; font-size: .92em; }
-
-  @media (max-width: 820px) {
-    .pg-grid, .pg-outputs, .explorations, .ground-grid { grid-template-columns: 1fr; }
-    section.card { padding: 18px 16px; }
+  @media (max-width: 1000px) {
+    .wrap { padding-inline: 24px; }
+    .toc .wrap { column-gap: 20px; }
+    .idea-layout { grid-template-columns: minmax(0, 1fr); gap: 26px; }
+    .pg-outputs { grid-template-columns: minmax(0, 1fr); }
+    #p2p-checks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    #p2p-checks li { margin: 0; }
+  }
+  @media (max-width: 780px) {
+    html { scroll-padding-top: 24px; }
+    .toc { position: static; }
+    .toc .wrap { gap: 0 18px; }
+    .toc a { min-height: 44px; font-size: 12px; }
+    .hero-bottom { align-items: flex-start; flex-direction: column; gap: 16px; }
+    .masthead-note { display: none; }
+    #p2p-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .explorations, .ground-grid { grid-template-columns: minmax(0, 1fr); }
+    #p2p-visual svg.p2p-svg { min-width: 680px; }
+    .scroll-hint { display: block; }
+    footer.wrap { flex-direction: column; gap: 10px; }
+  }
+  @media (max-width: 560px) {
+    .wrap { padding-inline: 16px; }
+    .masthead { padding-block: 18px; }
+    .hero-body { padding-block: 28px; }
+    h1 { font-size: 36px; }
+    .hook { font-size: 16px; }
+    main.wrap { padding-block: 24px; }
+    section.card { padding: 20px 16px; margin-bottom: 18px; border-radius: 14px; }
+    .section-heading { gap: 10px; margin-bottom: 20px; }
+    h2 { font-size: 21px; }
+    .section-index { width: 30px; height: 30px; }
+    .playground-heading { padding: 20px 16px; }
+    .pg-grid, .pg-outputs { padding: 20px 16px; gap: 24px; }
+    #p2p-controls { grid-template-columns: minmax(0, 1fr); }
+    .pg-controls { padding: 16px; }
+    .equation, .p2p-exploration, .ground-grid > div { padding: 18px; }
+    .equation math[display="block"] { font-size: 1.05em; }
+    table.symbols { font-size: 13px; }
+    table.symbols th, table.symbols td { padding: 10px 8px; }
+    table.symbols th { font-size: 10px; }
+    table.symbols td.sym { font-size: 16px; }
+    #p2p-checks { grid-template-columns: minmax(0, 1fr); }
+    #p2p-values { grid-template-columns: minmax(0, 1fr); }
+    .p2p-error { margin-inline: 16px; }
+    .visual-heading { align-items: flex-start; flex-direction: column; gap: 4px; }
+    #p2p-visual { padding: 8px; }
+    .p2p-try { width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    body { background: white; font-size: 11pt; }
+    .wrap { width: 100%; padding-inline: 0; }
+    .toc, .skip-link, .hero-link, #p2p-reset, .p2p-try { display: none; }
+    .pg-visual { position: static; }
+    .pg-grid, .pg-outputs, .idea-layout { grid-template-columns: minmax(0, 1fr); }
+    section.card { border: 0; padding: 16px 0; }
+    #p2p-playground { overflow: visible; }
+    #p2p-visual { overflow: visible; }
+    #p2p-visual svg.p2p-svg { min-width: 0; max-width: 100% !important; }
+    .scroll-hint { display: none; }
   }
 </style>
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to explanation</a>
 <header class="hero">
   <div class="wrap">
-    <p class="kicker">Interactive explanation</p>
-    <h1>Entropy: How Much Choice Is in a Distribution?</h1>
-    <p class="hook">Shannon asked how much "choice" or uncertainty a set of probabilities contains. Build a small distribution and watch the entropy in bits rise toward <math aria-label="\log_2 n"><mrow><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi></mrow></math> as the outcomes become equally likely, and fall to zero when one outcome is certain.</p>
-    <p class="meta">Written for: Engineering undergraduate who knows basic probability and logarithms but has not studied information theory.</p>
+    <div class="masthead">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">[·]</span>Paper to Playground</div>
+      <span class="masthead-note">Read the idea. Make it click.</span>
+    </div>
+    <div class="hero-body">
+      <p class="kicker">The interactive research notebook</p>
+      <h1>Entropy: How Much Choice Is in a Distribution?</h1>
+      <p class="hook">Shannon asked how to measure the 'choice' in a set of probabilities. Move the probabilities and the number of outcomes, and watch the entropy in bits respond.</p>
+      <div class="hero-bottom">
+        <a class="hero-link" href="#p2p-playground">Open the playground <span aria-hidden="true">↗</span></a>
+        <p class="meta">Written for: Engineering undergraduate who knows basic probability and logarithms but has not studied information theory.</p>
+      </div>
+    </div>
   </div>
 </header>
 <nav class="toc" aria-label="Sections">
   <div class="wrap">
-    <a href="#idea">1. The idea</a>
-    <a href="#symbols">2. Symbols</a>
-    <a href="#p2p-playground">3. Playground</a>
-    <a href="#explore">4. Guided explorations</a>
-    <a href="#caveat">5. Caveat</a>
-    <a href="#grounding">6. Source grounding</a>
+    <a href="#idea"><span>01</span> The idea</a>
+    <a href="#symbols"><span>02</span> Symbols</a>
+    <a href="#p2p-playground"><span>03</span> Playground</a>
+    <a href="#explore"><span>04</span> Explorations</a>
+    <a href="#caveat"><span>05</span> Keep in mind</a>
+    <a href="#grounding"><span>06</span> The source</a>
   </div>
 </nav>
-<main class="wrap">
-  <section id="idea" class="card">
-    <h2>1. The idea</h2>
-    <p>Suppose you are about to observe one of <math aria-label="n"><mrow><mi>n</mi></mrow></math> events, and you know only the probabilities <math aria-label="p_1,\dots,p_n"><mrow><msub><mi>p</mi><mn>1</mn></msub><mo>,</mo><mo>…</mo><mo>,</mo><msub><mi>p</mi><mi>n</mi></msub></mrow></math>. Shannon asked for a number <math aria-label="H(p_1,\dots,p_n)"><mrow><mi>H</mi><mo>(</mo><msub><mi>p</mi><mn>1</mn></msub><mo>,</mo><mo>…</mo><mo>,</mo><msub><mi>p</mi><mi>n</mi></msub><mo>)</mo></mrow></math> measuring how much choice is involved. He required three things: <math aria-label="H"><mrow><mi>H</mi></mrow></math> is continuous in the <math aria-label="p_i"><mrow><msub><mi>p</mi><mi>i</mi></msub></mrow></math>; when all outcomes are equally likely <math aria-label="H"><mrow><mi>H</mi></mrow></math> increases with <math aria-label="n"><mrow><mi>n</mi></mrow></math>; and splitting a choice into two successive choices makes <math aria-label="H"><mrow><mi>H</mi></mrow></math> the weighted sum of the parts.</p><p>Theorem 2 says the only function satisfying these is <math aria-label="H = -K\sum_i p_i \log p_i"><mrow><mi>H</mi><mo>=</mo><mo>−</mo><mi>K</mi><munder><mo movablelimits="true">∑</mo><mi>i</mi></munder><msub><mi>p</mi><mi>i</mi></msub><mi mathvariant="normal">log</mi><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math>, with <math aria-label="K&gt;0"><mrow><mi>K</mi><mo>&gt;</mo><mn>0</mn></mrow></math> just fixing the unit. Taking base-2 logarithms makes the unit the <strong>bit</strong>.</p><p>Each term <math aria-label="-p_i\log_2 p_i"><mrow><mo>−</mo><msub><mi>p</mi><mi>i</mi></msub><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math> is that outcome's own contribution. A very likely outcome contributes little (it is not surprising), and a very unlikely one also contributes little (it rarely happens) — the largest single contribution comes from an outcome with probability <math aria-label="1/e \approx 0.368"><mrow><mn>1</mn><mo>/</mo><mi>e</mi><mo>≈</mo><mn>0.368</mn></mrow></math>. The total <math aria-label="H"><mrow><mi>H</mi></mrow></math> is the sum of these contributions.</p><p>Two special cases anchor the intuition. If one outcome has probability 1, every term is zero, so <math aria-label="H=0"><mrow><mi>H</mi><mo>=</mo><mn>0</mn></mrow></math>: certainty means no choice. If all <math aria-label="n"><mrow><mi>n</mi></mrow></math> outcomes are equally likely, <math aria-label="p_i = 1/n"><mrow><msub><mi>p</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn><mo>/</mo><mi>n</mi></mrow></math> and <math aria-label="H = -\sum (1/n)\log_2(1/n) = \log_2 n"><mrow><mi>H</mi><mo>=</mo><mo>−</mo><mo movablelimits="true">∑</mo><mo>(</mo><mn>1</mn><mo>/</mo><mi>n</mi><mo>)</mo><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mo>(</mo><mn>1</mn><mo>/</mo><mi>n</mi><mo>)</mo><mo>=</mo><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi></mrow></math>, the largest value possible for that <math aria-label="n"><mrow><mi>n</mi></mrow></math>.</p>
-    <h3>Why it matters</h3>
-    <p>Entropy is the currency of information theory: it sets the minimum average number of bits needed to describe the outcome of a random source, and it is the quantity that channel capacity and coding theorems are measured against. Getting comfortable with <math aria-label="H=-\sum p_i\log_2 p_i"><mrow><mi>H</mi><mo>=</mo><mo>−</mo><mo movablelimits="true">∑</mo><msub><mi>p</mi><mi>i</mi></msub><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math> on a tiny distribution makes those later results readable.</p>
-    <div class="equations"><div class="equation"><math display="block" aria-label="H = -K \sum_{i=1}^{n} p_i \log p_i"><mrow><mi>H</mi><mo>=</mo><mo>−</mo><mi>K</mi><munderover><mo movablelimits="true">∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mrow><mi>n</mi></mrow></munderover><msub><mi>p</mi><mi>i</mi></msub><mi mathvariant="normal">log</mi><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math><p class="caption">Theorem 2: the unique measure of choice/uncertainty satisfying Shannon's three requirements; <math aria-label="K&gt;0"><mrow><mi>K</mi><mo>&gt;</mo><mn>0</mn></mrow></math> only chooses the unit.</p></div><div class="equation"><math display="block" aria-label="H = -\sum_{i=1}^{n} p_i \log_2 p_i"><mrow><mi>H</mi><mo>=</mo><mo>−</mo><munderover><mo movablelimits="true">∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mrow><mi>n</mi></mrow></munderover><msub><mi>p</mi><mi>i</mi></msub><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math><p class="caption">The same formula with base-2 logarithms, so that <math aria-label="H"><mrow><mi>H</mi></mrow></math> is measured in bits.</p></div><div class="equation"><math display="block" aria-label="H = 0 \iff p_i = 1 \text{ for exactly one } i"><mrow><mi>H</mi><mo>=</mo><mn>0</mn><mo>⇔</mo><msub><mi>p</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn><mtext>forexactlyone</mtext><mi>i</mi></mrow></math><p class="caption">Property (1): entropy vanishes only when the outcome is certain.</p></div><div class="equation"><math display="block" aria-label="H \le \log_2 n, \quad H = \log_2 n \iff p_i = 1/n \ \forall i"><mrow><mi>H</mi><mo>≤</mo><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi><mo>,</mo><mspace width="1em"></mspace><mi>H</mi><mo>=</mo><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi><mo>⇔</mo><msub><mi>p</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn><mo>/</mo><mi>n</mi><mspace width="0.25em"></mspace><mo>∀</mo><mi>i</mi></mrow></math><p class="caption">Property (2): for fixed <math aria-label="n"><mrow><mi>n</mi></mrow></math>, entropy is maximized by the uniform distribution.</p></div><div class="equation"><math display="block" aria-label="H = -(p \log_2 p + q \log_2 q), \quad q = 1-p"><mrow><mi>H</mi><mo>=</mo><mo>−</mo><mo>(</mo><mi>p</mi><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>p</mi><mo>+</mo><mi>q</mi><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>q</mi><mo>)</mo><mo>,</mo><mspace width="1em"></mspace><mi>q</mi><mo>=</mo><mn>1</mn><mo>−</mo><mi>p</mi></mrow></math><p class="caption">The two-outcome case plotted in Fig. 7; it peaks at <math aria-label="p=q=1/2"><mrow><mi>p</mi><mo>=</mo><mi>q</mi><mo>=</mo><mn>1</mn><mo>/</mo><mn>2</mn></mrow></math> with <math aria-label="H=1"><mrow><mi>H</mi><mo>=</mo><mn>1</mn></mrow></math> bit.</p></div></div>
+<main id="main" class="wrap" tabindex="-1">
+  <section id="idea" class="card" aria-labelledby="idea-title">
+    <div class="section-heading"><span class="section-index" aria-hidden="true">01</span><h2 id="idea-title">The idea</h2></div>
+    <div class="idea-layout">
+      <div class="idea-copy">
+        <p>Suppose a random experiment has <math aria-label="n"><mrow><mi>n</mi></mrow></math> possible outcomes with probabilities <math aria-label="p_1,\dots,p_n"><mrow><msub><mi>p</mi><mn>1</mn></msub><mo>,</mo><mo>…</mo><mo>,</mo><msub><mi>p</mi><mi>n</mi></msub></mrow></math> that sum to 1. Shannon wanted a number <math aria-label="H(p_1,\dots,p_n)"><mrow><mi>H</mi><mo>(</mo><msub><mi>p</mi><mn>1</mn></msub><mo>,</mo><mo>…</mo><mo>,</mo><msub><mi>p</mi><mi>n</mi></msub><mo>)</mo></mrow></math> that measures how uncertain we are about the outcome. He required three things: <math aria-label="H"><mrow><mi>H</mi></mrow></math> is continuous in the <math aria-label="p_i"><mrow><msub><mi>p</mi><mi>i</mi></msub></mrow></math>; if all outcomes are equally likely then <math aria-label="H"><mrow><mi>H</mi></mrow></math> increases with <math aria-label="n"><mrow><mi>n</mi></mrow></math>; and splitting a choice into two stages makes <math aria-label="H"><mrow><mi>H</mi></mrow></math> the weighted sum of the parts.</p><p>Theorem 2 says the only function satisfying these is <math aria-label="H = -K\sum_i p_i \log p_i"><mrow><mi>H</mi><mo>=</mo><mo>−</mo><mi>K</mi><munder><mo movablelimits="true">∑</mo><mi>i</mi></munder><msub><mi>p</mi><mi>i</mi></msub><mi mathvariant="normal">log</mi><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math>. Choosing base-2 logarithms and <math aria-label="K=1"><mrow><mi>K</mi><mo>=</mo><mn>1</mn></mrow></math> makes the unit the <strong>bit</strong>. Each term <math aria-label="-p_i\log_2 p_i"><mrow><mo>−</mo><msub><mi>p</mi><mi>i</mi></msub><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math> is that outcome's contribution: an outcome with tiny probability contributes little because it rarely happens, and an outcome with probability near 1 also contributes little because it is nearly certain.</p><p>Two properties follow directly. If one outcome has probability 1 and the rest are 0, every term is 0, so <math aria-label="H=0"><mrow><mi>H</mi><mo>=</mo><mn>0</mn></mrow></math>: certainty means no uncertainty. If all <math aria-label="n"><mrow><mi>n</mi></mrow></math> outcomes are equally likely, <math aria-label="p_i=1/n"><mrow><msub><mi>p</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn><mo>/</mo><mi>n</mi></mrow></math>, then <math aria-label="H=\log_2 n"><mrow><mi>H</mi><mo>=</mo><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi></mrow></math>, the largest possible value for that <math aria-label="n"><mrow><mi>n</mi></mrow></math>.</p><p>Zero probabilities need care: <math aria-label="\log_2 0"><mrow><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mn>0</mn></mrow></math> is undefined, but <math aria-label="p\log_2 p \to 0"><mrow><mi>p</mi><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>p</mi><mo>→</mo><mn>0</mn></mrow></math> as <math aria-label="p\to 0^+"><mrow><mi>p</mi><mo>→</mo><msup><mn>0</mn><mo>+</mo></msup></mrow></math>, so the convention is that a zero-probability outcome contributes exactly 0 to <math aria-label="H"><mrow><mi>H</mi></mrow></math>.</p>
+        <h3>Why it matters</h3>
+        <p>Entropy is the foundation of information theory, data compression, and channel capacity. Seeing it as a sum of per-outcome contributions makes clear why uniform distributions carry the most uncertainty and why certainty carries none.</p>
+      </div>
+      <div class="equation-panel"><div class="equations"><div class="equation"><math display="block" aria-label="H = -K\sum_{i=1}^{n} p_i \log p_i"><mrow><mi>H</mi><mo>=</mo><mo>−</mo><mi>K</mi><munderover><mo movablelimits="true">∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mrow><mi>n</mi></mrow></munderover><msub><mi>p</mi><mi>i</mi></msub><mi mathvariant="normal">log</mi><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math><p class="caption">Theorem 2: the unique measure satisfying Shannon's three requirements; <math aria-label="K"><mrow><mi>K</mi></mrow></math> is a positive constant fixing the unit.</p></div><div class="equation"><math display="block" aria-label="H = -\sum_{i=1}^{n} p_i \log_2 p_i"><mrow><mi>H</mi><mo>=</mo><mo>−</mo><munderover><mo movablelimits="true">∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mrow><mi>n</mi></mrow></munderover><msub><mi>p</mi><mi>i</mi></msub><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math><p class="caption">With base-2 logarithms and <math aria-label="K=1"><mrow><mi>K</mi><mo>=</mo><mn>1</mn></mrow></math>, the unit is the bit.</p></div><div class="equation"><math display="block" aria-label="p_i = \frac{1}{n} \Rightarrow H = \log_2 n"><mrow><msub><mi>p</mi><mi>i</mi></msub><mo>=</mo><mfrac><mrow><mn>1</mn></mrow><mrow><mi>n</mi></mrow></mfrac><mo>⇒</mo><mi>H</mi><mo>=</mo><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi></mrow></math><p class="caption">Property (2): for fixed <math aria-label="n"><mrow><mi>n</mi></mrow></math>, <math aria-label="H"><mrow><mi>H</mi></mrow></math> is maximized and equals <math aria-label="\log_2 n"><mrow><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi></mrow></math> when all outcomes are equally likely.</p></div><div class="equation"><math display="block" aria-label="p_i = 0 \Rightarrow -p_i \log_2 p_i = 0"><mrow><msub><mi>p</mi><mi>i</mi></msub><mo>=</mo><mn>0</mn><mo>⇒</mo><mo>−</mo><msub><mi>p</mi><mi>i</mi></msub><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub><mo>=</mo><mn>0</mn></mrow></math><p class="caption">Property (1): a zero-probability outcome contributes nothing; <math aria-label="H=0"><mrow><mi>H</mi><mo>=</mo><mn>0</mn></mrow></math> iff one outcome has probability 1.</p></div></div></div>
+    </div>
   </section>
-
-  <section id="symbols" class="card">
-    <h2>2. What the symbols mean</h2>
-    <table class="symbols"><thead><tr><th>Symbol</th><th>Meaning</th><th>In the playground</th></tr></thead><tbody><tr><td class="sym"><math aria-label="n"><mrow><mi>n</mi></mrow></math></td><td>number of possible events/outcomes</td><td>the <math aria-label="n"><mrow><mi>n</mi></mrow></math> control; also the length of the weight vector</td></tr><tr><td class="sym"><math aria-label="p_i"><mrow><msub><mi>p</mi><mi>i</mi></msub></mrow></math></td><td>probability of the <math aria-label="i"><mrow><mi>i</mi></mrow></math>-th outcome, with <math aria-label="\sum_i p_i = 1"><mrow><munder><mo movablelimits="true">∑</mo><mi>i</mi></munder><msub><mi>p</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn></mrow></math></td><td>the normalized probabilities shown in the left bar chart and in the table</td></tr><tr><td class="sym"><math aria-label="H"><mrow><mi>H</mi></mrow></math></td><td>entropy: the measure of choice/uncertainty, in bits when the log is base 2</td><td>the total shown as a value label and as the reference line on the contribution chart</td></tr><tr><td class="sym"><math aria-label="-p_i \log_2 p_i"><mrow><mo>−</mo><msub><mi>p</mi><mi>i</mi></msub><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math></td><td>the contribution of outcome <math aria-label="i"><mrow><mi>i</mi></mrow></math> to the total entropy</td><td>the right-hand bars, one per outcome</td></tr><tr><td class="sym"><math aria-label="\log_2 n"><mrow><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi></mrow></math></td><td>the maximum entropy for <math aria-label="n"><mrow><mi>n</mi></mrow></math> outcomes, attained when all <math aria-label="p_i = 1/n"><mrow><msub><mi>p</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn><mo>/</mo><mi>n</mi></mrow></math></td><td>the dashed reference line and the <math aria-label="H_{\max}"><mrow><msub><mi>H</mi><mrow><mo movablelimits="true" form="prefix">max</mo><mspace width="0.1667em"></mspace></mrow></msub></mrow></math> value label</td></tr></tbody></table>
+  <section id="symbols" class="card" aria-labelledby="symbols-title">
+    <div class="section-heading"><span class="section-index" aria-hidden="true">02</span><h2 id="symbols-title">A quick guide to the symbols</h2></div>
+    <div class="table-scroll" role="region" aria-label="Symbol definitions" tabindex="0"><table class="symbols"><thead><tr><th>Symbol</th><th>Meaning</th><th>In the playground</th></tr></thead><tbody><tr><td class="sym"><math aria-label="n"><mrow><mi>n</mi></mrow></math></td><td>number of possible outcomes</td><td>the 'Number of outcomes' control</td></tr><tr><td class="sym"><math aria-label="p_i"><mrow><msub><mi>p</mi><mi>i</mi></msub></mrow></math></td><td>probability of outcome <math aria-label="i"><mrow><mi>i</mi></mrow></math>; the <math aria-label="p_i"><mrow><msub><mi>p</mi><mi>i</mi></msub></mrow></math> sum to 1</td><td>the probability vector sliders</td></tr><tr><td class="sym"><math aria-label="H"><mrow><mi>H</mi></mrow></math></td><td>entropy in bits, the total uncertainty</td><td>the 'Total entropy H' value and the total bar</td></tr><tr><td class="sym"><math aria-label="-p_i\log_2 p_i"><mrow><mo>−</mo><msub><mi>p</mi><mi>i</mi></msub><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math></td><td>contribution of outcome <math aria-label="i"><mrow><mi>i</mi></mrow></math> to <math aria-label="H"><mrow><mi>H</mi></mrow></math></td><td>the contribution bars and the contribution table</td></tr><tr><td class="sym"><math aria-label="\log_2 n"><mrow><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi></mrow></math></td><td>maximum entropy for <math aria-label="n"><mrow><mi>n</mi></mrow></math> outcomes (uniform case)</td><td>the ceiling line and the 'Max H' value</td></tr></tbody></table></div>
   </section>
-
-  <section id="p2p-playground" class="card">
-    <h2>3. Playground</h2>
+  <section id="p2p-playground" class="card" aria-labelledby="playground-title">
+    <div class="section-heading playground-heading">
+      <span class="section-index" aria-hidden="true">03</span>
+      <div><h2 id="playground-title">Make the idea move.</h2><p class="section-subtitle">Change an input. Follow the calculation. See what changes.</p></div>
+    </div>
     <div class="pg-grid">
       <div class="pg-controls">
-        <h3>Controls</h3>
+        <div class="panel-heading"><h3>Your inputs</h3><span class="eyebrow">Adjust &amp; observe</span></div>
         <div id="p2p-controls"></div>
-        <button type="button" id="p2p-reset">Reset to defaults</button>
+        <p class="input-notice" role="status">Check the highlighted input. The result still uses the last valid value.</p>
+        <button type="button" id="p2p-reset">↺ Reset to defaults</button>
       </div>
-      <div class="pg-visual">
-        <div id="p2p-visual" aria-live="polite"></div>
-        <p class="caption">Left panel: bars are the probabilities <math aria-label="p_i"><mrow><msub><mi>p</mi><mi>i</mi></msub></mrow></math> (blue), with a dashed line at <math aria-label="1/n"><mrow><mn>1</mn><mo>/</mo><mi>n</mi></mrow></math>. Right panel: bars are the individual contributions <math aria-label="-p_i\log_2 p_i"><mrow><mo>−</mo><msub><mi>p</mi><mi>i</mi></msub><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math> (one color per outcome), the solid horizontal line marks the total <math aria-label="H"><mrow><mi>H</mi></mrow></math>, and the dashed line marks <math aria-label="\log_2 n"><mrow><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi></mrow></math>. The gap between the two lines is how far the distribution is from uniform. Bars of height zero mean that outcome contributes nothing.</p>
-      </div>
+      <figure class="pg-visual">
+        <div class="visual-heading"><h3>See the mechanism</h3><span class="live-label">Computed from your inputs</span></div>
+        <p id="visual-scroll-hint" class="scroll-hint">Scroll the diagram sideways to see every label. Values are also listed below.</p>
+        <div id="p2p-visual" role="region" aria-label="Interactive mechanism diagram" aria-describedby="visual-caption visual-scroll-hint" aria-live="polite" tabindex="0"></div>
+        <figcaption id="visual-caption" class="caption">Left panel: bars are the probabilities <math aria-label="p_i"><mrow><msub><mi>p</mi><mi>i</mi></msub></mrow></math>; the dashed line is the uniform level <math aria-label="1/n"><mrow><mn>1</mn><mo>/</mo><mi>n</mi></mrow></math>. Right panel: bars are the individual contributions <math aria-label="-p_i\log_2 p_i"><mrow><mo>−</mo><msub><mi>p</mi><mi>i</mi></msub><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math> (same colors as the probabilities), the solid bar on the right is the total <math aria-label="H"><mrow><mi>H</mi></mrow></math>, and the dashed line is the ceiling <math aria-label="\log_2 n"><mrow><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi></mrow></math>. A contribution bar of zero height means that outcome adds no uncertainty.</figcaption>
+      </figure>
     </div>
     <div id="p2p-error" class="p2p-error" role="alert" hidden></div>
     <div class="pg-outputs">
-      <div>
-        <h3>Intermediate values (computed live)</h3>
-        <div id="p2p-values"></div>
-      </div>
-      <div>
-        <h3>Live checks</h3>
-        <ul id="p2p-checks"></ul>
-      </div>
+      <div><h3>Inside the calculation</h3><div id="p2p-values"></div></div>
+      <div><h3>Live checks</h3><ul id="p2p-checks"></ul></div>
     </div>
   </section>
-
-  <section id="explore" class="card">
-    <h2>4. Guided explorations</h2>
-    <div class="explorations"><article class="p2p-exploration"><h3>Exploration 1: Certainty gives zero bits</h3><dl><dt>Change</dt><dd>Look at the distribution with one weight equal to 1 and the rest 0, then drag the other weights up a little and back to 0.</dd><dt>Observe</dt><dd>The <math aria-label="H"><mrow><mi>H</mi></mrow></math> value label reads 0.000 bits and every contribution bar has height 0; as soon as any other weight becomes positive, <math aria-label="H"><mrow><mi>H</mi></mrow></math> becomes positive.</dd><dt>Why</dt><dd>Every term is <math aria-label="-p_i\log_2 p_i"><mrow><mo>−</mo><msub><mi>p</mi><mi>i</mi></msub><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math> with <math aria-label="p_i"><mrow><msub><mi>p</mi><mi>i</mi></msub></mrow></math> either 0 or 1, and both give 0 (using <math aria-label="0\log 0 = 0"><mrow><mn>0</mn><mi mathvariant="normal">log</mi><mspace width="0.1667em"></mspace><mn>0</mn><mo>=</mo><mn>0</mn></mrow></math>). Property (1) of the excerpt: only when we are certain of the outcome does <math aria-label="H"><mrow><mi>H</mi></mrow></math> vanish.</dd></dl><button type="button" class="p2p-try" data-p2p-preset="0">Set up this exploration</button></article><article class="p2p-exploration"><h3>Exploration 2: Four equally likely outcomes give two bits</h3><dl><dt>Change</dt><dd>Set <math aria-label="n"><mrow><mi>n</mi></mrow></math> to 4 and make all four weights equal. Then change <math aria-label="n"><mrow><mi>n</mi></mrow></math> to 2, 3, 5, 6 and watch the <math aria-label="H"><mrow><mi>H</mi></mrow></math> label.</dd><dt>Observe</dt><dd>With <math aria-label="n=4"><mrow><mi>n</mi><mo>=</mo><mn>4</mn></mrow></math> equal weights the <math aria-label="H"><mrow><mi>H</mi></mrow></math> label reads 2.000 bits and the solid line sits exactly on the dashed <math aria-label="\log_2 n"><mrow><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi></mrow></math> line. Changing <math aria-label="n"><mrow><mi>n</mi></mrow></math> moves the dashed line to <math aria-label="\log_2 n"><mrow><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi></mrow></math> and <math aria-label="H"><mrow><mi>H</mi></mrow></math> follows it whenever the weights stay equal.</dd><dt>Why</dt><dd>For equal probabilities <math aria-label="p_i = 1/n"><mrow><msub><mi>p</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn><mo>/</mo><mi>n</mi></mrow></math>, so <math aria-label="H = -\sum (1/n)\log_2(1/n) = \log_2 n"><mrow><mi>H</mi><mo>=</mo><mo>−</mo><mo movablelimits="true">∑</mo><mo>(</mo><mn>1</mn><mo>/</mo><mi>n</mi><mo>)</mo><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mo>(</mo><mn>1</mn><mo>/</mo><mi>n</mi><mo>)</mo><mo>=</mo><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi></mrow></math>. With <math aria-label="n=4"><mrow><mi>n</mi><mo>=</mo><mn>4</mn></mrow></math> that is <math aria-label="\log_2 4 = 2"><mrow><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mn>4</mn><mo>=</mo><mn>2</mn></mrow></math> bits; this is the maximum for that <math aria-label="n"><mrow><mi>n</mi></mrow></math>, Property (2).</dd></dl><button type="button" class="p2p-try" data-p2p-preset="1">Set up this exploration</button></article></div>
+  <section id="explore" class="card" aria-labelledby="explore-title">
+    <div class="section-heading"><span class="section-index" aria-hidden="true">04</span><h2 id="explore-title">Two ways to build your intuition</h2></div>
+    <div class="explorations"><article class="p2p-exploration"><h3>Exploration 1: Certainty versus equally likely</h3><dl><dt>Change</dt><dd>Turn on 'Force equally likely', then turn it off and drag <math aria-label="p_1"><mrow><msub><mi>p</mi><mn>1</mn></msub></mrow></math> back toward 1.</dd><dt>Observe</dt><dd>With <math aria-label="p=(1,0,0,0)"><mrow><mi>p</mi><mo>=</mo><mo>(</mo><mn>1</mn><mo>,</mo><mn>0</mn><mo>,</mo><mn>0</mn><mo>,</mo><mn>0</mn><mo>)</mo></mrow></math> the total entropy reads 0 bits and all contribution bars vanish. With the toggle on, <math aria-label="p=(0.25,0.25,0.25,0.25)"><mrow><mi>p</mi><mo>=</mo><mo>(</mo><mn>0.25</mn><mo>,</mo><mn>0.25</mn><mo>,</mo><mn>0.25</mn><mo>,</mo><mn>0.25</mn><mo>)</mo></mrow></math> and the total reads 2 bits, matching <math aria-label="\log_2 4"><mrow><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mn>4</mn></mrow></math>.</dd><dt>Why</dt><dd>A certain outcome has <math aria-label="p\log_2 p = 0"><mrow><mi>p</mi><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>p</mi><mo>=</mo><mn>0</mn></mrow></math> for every term, so <math aria-label="H=0"><mrow><mi>H</mi><mo>=</mo><mn>0</mn></mrow></math>. Equal probabilities give each term <math aria-label="0.25\times 2 = 0.5"><mrow><mn>0.25</mn><mo>×</mo><mn>2</mn><mo>=</mo><mn>0.5</mn></mrow></math>, and four of them sum to 2.</dd></dl><button type="button" class="p2p-try" data-p2p-preset="0">Set up this exploration</button></article><article class="p2p-exploration"><h3>Exploration 2: More outcomes, more uncertainty</h3><dl><dt>Change</dt><dd>Increase <math aria-label="n"><mrow><mi>n</mi></mrow></math> from 2 to 6 with the uniform toggle on.</dd><dt>Observe</dt><dd>The total entropy rises from 1 bit at <math aria-label="n=2"><mrow><mi>n</mi><mo>=</mo><mn>2</mn></mrow></math> to about 2.585 bits at <math aria-label="n=6"><mrow><mi>n</mi><mo>=</mo><mn>6</mn></mrow></math>, tracking <math aria-label="\log_2 n"><mrow><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi></mrow></math>; the ceiling line moves up too.</dd><dt>Why</dt><dd>Property (2): with equally likely events, <math aria-label="H=\log_2 n"><mrow><mi>H</mi><mo>=</mo><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi></mrow></math> is monotonic increasing in <math aria-label="n"><mrow><mi>n</mi></mrow></math>, so more possible events means more choice.</dd></dl><button type="button" class="p2p-try" data-p2p-preset="1">Set up this exploration</button></article></div>
   </section>
-
-  <section id="caveat" class="card caveat">
-    <h2>5. Misconception: Entropy is not the number of outcomes</h2>
-    <p>A distribution over 6 outcomes can have less entropy than one over 2 outcomes: set <math aria-label="n=6"><mrow><mi>n</mi><mo>=</mo><mn>6</mn></mrow></math> with weights <math aria-label="[1,0,0,0,0,0]"><mrow><mo>[</mo><mn>1</mn><mo>,</mo><mn>0</mn><mo>,</mo><mn>0</mn><mo>,</mo><mn>0</mn><mo>,</mo><mn>0</mn><mo>,</mo><mn>0</mn><mo>]</mo></mrow></math> and <math aria-label="H=0"><mrow><mi>H</mi><mo>=</mo><mn>0</mn></mrow></math>, while <math aria-label="n=2"><mrow><mi>n</mi><mo>=</mo><mn>2</mn></mrow></math> with weights <math aria-label="[1,1]"><mrow><mo>[</mo><mn>1</mn><mo>,</mo><mn>1</mn><mo>]</mo></mrow></math> gives <math aria-label="H=1"><mrow><mi>H</mi><mo>=</mo><mn>1</mn></mrow></math> bit. Entropy depends on the whole distribution, not on <math aria-label="n"><mrow><mi>n</mi></mrow></math> alone; <math aria-label="n"><mrow><mi>n</mi></mrow></math> only sets the ceiling <math aria-label="\log_2 n"><mrow><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>n</mi></mrow></math>.</p>
+  <section id="caveat" class="card caveat" aria-labelledby="caveat-title">
+    <div class="section-heading"><span class="section-index" aria-hidden="true">05</span><h2 id="caveat-title">Misconception: Zero probability is not an error</h2></div>
+    <p>A zero-probability outcome makes <math aria-label="\log_2 0"><mrow><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mn>0</mn></mrow></math> undefined, but the limit <math aria-label="p\log_2 p \to 0"><mrow><mi>p</mi><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><mi>p</mi><mo>→</mo><mn>0</mn></mrow></math> as <math aria-label="p\to 0^+"><mrow><mi>p</mi><mo>→</mo><msup><mn>0</mn><mo>+</mo></msup></mrow></math> means its contribution is exactly 0. The page applies this convention, so setting a slider to 0 never produces NaN or Infinity.</p>
   </section>
-
-  <section id="grounding" class="card">
-    <h2>6. Source grounding</h2>
-    <p><strong>Paper:</strong> A Mathematical Theory of Communication (C. E. Shannon, 1948) &mdash; <a href="https://people.math.harvard.edu/~ctm/home/text/others/shannon/entropy/entropy.pdf">https://people.math.harvard.edu/~ctm/home/text/others/shannon/entropy/entropy.pdf</a></p><p><strong>Relevant part:</strong> Section 6, Choice, Uncertainty and Entropy; Theorem 2 and Properties (1)-(2); Fig. 7</p><div class="ground-grid"><div class="from-source"><h3>Supported by the source excerpt</h3><ul><li>Shannon considers a set of possible events with known probabilities <math aria-label="p_1,\dots,p_n"><mrow><msub><mi>p</mi><mn>1</mn></msub><mo>,</mo><mo>…</mo><mo>,</mo><msub><mi>p</mi><mi>n</mi></msub></mrow></math> and asks for a measure <math aria-label="H(p_1,\dots,p_n)"><mrow><mi>H</mi><mo>(</mo><msub><mi>p</mi><mn>1</mn></msub><mo>,</mo><mo>…</mo><mo>,</mo><msub><mi>p</mi><mi>n</mi></msub><mo>)</mo></mrow></math> of how much choice or uncertainty is involved.</li><li>He requires: (1) <math aria-label="H"><mrow><mi>H</mi></mrow></math> continuous in the <math aria-label="p_i"><mrow><msub><mi>p</mi><mi>i</mi></msub></mrow></math>; (2) <math aria-label="H"><mrow><mi>H</mi></mrow></math> monotonic increasing in <math aria-label="n"><mrow><mi>n</mi></mrow></math> when all <math aria-label="p_i = 1/n"><mrow><msub><mi>p</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn><mo>/</mo><mi>n</mi></mrow></math>; (3) breaking a choice into two successive choices makes the original <math aria-label="H"><mrow><mi>H</mi></mrow></math> the weighted sum of the individual values.</li><li>Theorem 2: the only <math aria-label="H"><mrow><mi>H</mi></mrow></math> satisfying these is <math aria-label="H = -K\sum_{i=1}^n p_i \log p_i"><mrow><mi>H</mi><mo>=</mo><mo>−</mo><mi>K</mi><munderover><mo movablelimits="true">∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><msub><mi>p</mi><mi>i</mi></msub><mi mathvariant="normal">log</mi><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math> with <math aria-label="K&gt;0"><mrow><mi>K</mi><mo>&gt;</mo><mn>0</mn></mrow></math>, where <math aria-label="K"><mrow><mi>K</mi></mrow></math> merely chooses the unit.</li><li>With logarithms to base 2 the unit is the bit.</li><li>Property (1): <math aria-label="H=0"><mrow><mi>H</mi><mo>=</mo><mn>0</mn></mrow></math> if and only if all <math aria-label="p_i"><mrow><msub><mi>p</mi><mi>i</mi></msub></mrow></math> but one are zero, that one being 1; only when certain of the outcome does <math aria-label="H"><mrow><mi>H</mi></mrow></math> vanish, otherwise <math aria-label="H"><mrow><mi>H</mi></mrow></math> is positive.</li><li>Property (2): for a given <math aria-label="n"><mrow><mi>n</mi></mrow></math>, <math aria-label="H"><mrow><mi>H</mi></mrow></math> is maximum and equal to <math aria-label="\log n"><mrow><mi mathvariant="normal">log</mi><mspace width="0.1667em"></mspace><mi>n</mi></mrow></math> when all <math aria-label="p_i"><mrow><msub><mi>p</mi><mi>i</mi></msub></mrow></math> are equal to <math aria-label="1/n"><mrow><mn>1</mn><mo>/</mo><mi>n</mi></mrow></math>.</li><li>For two possibilities with probabilities <math aria-label="p"><mrow><mi>p</mi></mrow></math> and <math aria-label="q=1-p"><mrow><mi>q</mi><mo>=</mo><mn>1</mn><mo>−</mo><mi>p</mi></mrow></math>, <math aria-label="H = -(p\log p + q\log q)"><mrow><mi>H</mi><mo>=</mo><mo>−</mo><mo>(</mo><mi>p</mi><mi mathvariant="normal">log</mi><mspace width="0.1667em"></mspace><mi>p</mi><mo>+</mo><mi>q</mi><mi mathvariant="normal">log</mi><mspace width="0.1667em"></mspace><mi>q</mi><mo>)</mo></mrow></math>, plotted against <math aria-label="p"><mrow><mi>p</mi></mrow></math> in Fig. 7.</li></ul></div><div class="ours"><h3>Our examples and simplifications (not from the paper)</h3><ul><li>The interactive weight-vector normalization <math aria-label="p_i = w_i/\sum_j w_j"><mrow><msub><mi>p</mi><mi>i</mi></msub><mo>=</mo><msub><mi>w</mi><mi>i</mi></msub><mo>/</mo><munder><mo movablelimits="true">∑</mo><mi>j</mi></munder><msub><mi>w</mi><mi>j</mi></msub></mrow></math> is our device for letting the learner edit a distribution while keeping it valid.</li><li>The claim that the largest single contribution <math aria-label="-p_i\log_2 p_i"><mrow><mo>−</mo><msub><mi>p</mi><mi>i</mi></msub><msub><mi mathvariant="normal">log</mi><mn>2</mn></msub><mspace width="0.1667em"></mspace><msub><mi>p</mi><mi>i</mi></msub></mrow></math> occurs at <math aria-label="p_i = 1/e"><mrow><msub><mi>p</mi><mi>i</mi></msub><mo>=</mo><mn>1</mn><mo>/</mo><mi>e</mi></mrow></math> is our own calculus remark, not from the excerpt.</li><li>The preset names (equally likely, certain outcome, skewed) and the specific toy weights are ours.</li><li>The stacked-bar visual layout, the color coding, and the <math aria-label="H_{\max}-H"><mrow><msub><mi>H</mi><mrow><mo movablelimits="true" form="prefix">max</mo><mspace width="0.1667em"></mspace></mrow></msub><mo>−</mo><mi>H</mi></mrow></math> gap readout are our presentation choices.</li></ul></div></div><p class="disclaimer">This page is a small interactive illustration of the entropy formula from Section 6. It does not reproduce any experiment, table or figure from Shannon's paper; all displayed numbers come from the current control settings.</p><details class="excerpt"><summary>Source excerpt given to the generator</summary><blockquote>6. Choice, Uncertainty and Entropy. Suppose we have a set of possible events whose probabilities of occurrence are p_1, p_2, ..., p_n. These probabilities are known but that is all we know concerning which event will occur. Can we find a measure of how much &quot;choice&quot; is involved in the selection of the event, or of how uncertain we are of the outcome? If there is such a measure, say H(p_1, p_2, ..., p_n), it is reasonable to require of it the following properties: (1) H should be continuous in the p_i. (2) If all the p_i are equal, p_i = 1/n, then H should be a monotonic increasing function of n: with equally likely events there is more choice, or uncertainty, when there are more possible events. (3) If a choice be broken down into two successive choices, the original H should be the weighted sum of the individual values of H. Theorem 2: The only H satisfying the three above assumptions is of the form H = -K sum_{i=1}^{n} p_i log p_i, where K is a positive constant (it merely amounts to a choice of a unit of measure). Quantities of the form H = -sum p_i log p_i play a central role in information theory as measures of information, choice and uncertainty, and will be recognized as the entropy of statistical mechanics. With logarithms to the base 2, the unit is the bit. Properties of H: (1) H = 0 if and only if all the p_i but one are zero, this one having the value unity; thus only when we are certain of the outcome does H vanish, otherwise H is positive. (2) For a given n, H is a maximum and equal to log n when all the p_i are equal (i.e., 1/n); this is also intuitively the most uncertain situation. For two possibilities with probabilities p and q = 1 - p, H = -(p log p + q log q), which is plotted as a function of p in Fig. 7.</blockquote></details>
+  <section id="grounding" class="card" aria-labelledby="grounding-title">
+    <div class="section-heading"><span class="section-index" aria-hidden="true">06</span><h2 id="grounding-title">Back to the paper</h2></div>
+    <p><strong>Paper:</strong> A Mathematical Theory of Communication (C. E. Shannon, 1948) &mdash; <a href="https://people.math.harvard.edu/~ctm/home/text/others/shannon/entropy/entropy.pdf">https://people.math.harvard.edu/~ctm/home/text/others/shannon/entropy/entropy.pdf</a></p><p><strong>Relevant part:</strong> Section 6, Choice, Uncertainty and Entropy; Theorem 2 and the properties of H</p><div class="ground-grid"><div class="from-source"><h3>Supported by the source excerpt</h3><ul><li>Shannon requires H to be continuous in the p_i, monotonic increasing in n when all p_i are equal, and additive when a choice is broken into successive choices.</li><li>Theorem 2: the only H satisfying these is H = -K sum p_i log p_i, with K a positive constant fixing the unit.</li><li>With logarithms to base 2 the unit is the bit.</li><li>Property (1): H = 0 if and only if all p_i but one are zero, that one having value unity.</li><li>Property (2): for a given n, H is maximum and equal to log n when all p_i are equal to 1/n.</li><li>For two possibilities with probabilities p and q = 1-p, H = -(p log p + q log q).</li></ul></div><div class="ours"><h3>Our examples and simplifications (not from the paper)</h3><ul><li>The interactive sliders, the bar/contribution visual, and the two-outcome curve are our teaching aids, not figures from the paper.</li><li>The convention that a zero-probability term contributes 0 is the standard limit of p log p as p -&gt; 0.</li><li>The 'uniform' toggle and the two-outcome select are convenience controls we added.</li></ul></div></div><p class="disclaimer">This is a toy illustration of the entropy formula on small hand-set distributions. It does not reproduce any experiment or numerical result from Shannon's paper.</p><details class="excerpt"><summary>Source excerpt given to the generator</summary><blockquote>6. Choice, Uncertainty and Entropy. Suppose we have a set of possible events whose probabilities of occurrence are p_1, p_2, ..., p_n. These probabilities are known but that is all we know concerning which event will occur. Can we find a measure of how much &quot;choice&quot; is involved in the selection of the event, or of how uncertain we are of the outcome? If there is such a measure, say H(p_1, p_2, ..., p_n), it is reasonable to require of it the following properties: (1) H should be continuous in the p_i. (2) If all the p_i are equal, p_i = 1/n, then H should be a monotonic increasing function of n: with equally likely events there is more choice, or uncertainty, when there are more possible events. (3) If a choice be broken down into two successive choices, the original H should be the weighted sum of the individual values of H. Theorem 2: The only H satisfying the three above assumptions is of the form H = -K sum_{i=1}^{n} p_i log p_i, where K is a positive constant (it merely amounts to a choice of a unit of measure). Quantities of the form H = -sum p_i log p_i play a central role in information theory as measures of information, choice and uncertainty, and will be recognized as the entropy of statistical mechanics. With logarithms to the base 2, the unit is the bit. Properties of H: (1) H = 0 if and only if all the p_i but one are zero, this one having the value unity; thus only when we are certain of the outcome does H vanish, otherwise H is positive. (2) For a given n, H is a maximum and equal to log n when all the p_i are equal (i.e., 1/n); this is also intuitively the most uncertain situation. For two possibilities with probabilities p and q = 1 - p, H = -(p log p + q log q), which is plotted as a function of p in Fig. 7.</blockquote></details>
   </section>
 </main>
-<footer class="wrap">Generated by paper-to-playground. All numbers on this page are computed live in your browser from the controls; nothing is loaded from the internet.</footer>
-<script id="p2p-spec" type="application/json">{"controls": [{"id": "n", "type": "number", "label": "Number of outcomes $n$", "min": 1.0, "max": 6.0, "step": 1.0, "value": 4.0, "help": "Resizes the weight vector; new entries start at 1.", "labelHtml": "Number of outcomes <math aria-label=\"n\"><mrow><mi>n<\/mi><\/mrow><\/math>", "helpHtml": "Resizes the weight vector; new entries start at 1."}, {"id": "w", "type": "vector", "label": "Weights $w_i$ (normalized to $p_i$)", "length": "n", "min": 0.0, "max": 1.0, "step": 0.05, "value": [0.25, 0.25, 0.25, 0.25], "labels": ["1", "2", "3", "4", "5", "6"], "fill": 0.25, "help": "Only the ratios matter: $p_i = w_i / \\sum_j w_j$.", "labelHtml": "Weights <math aria-label=\"w_i\"><mrow><msub><mi>w<\/mi><mi>i<\/mi><\/msub><\/mrow><\/math> (normalized to <math aria-label=\"p_i\"><mrow><msub><mi>p<\/mi><mi>i<\/mi><\/msub><\/mrow><\/math>)", "helpHtml": "Only the ratios matter: <math aria-label=\"p_i = w_i / \\sum_j w_j\"><mrow><msub><mi>p<\/mi><mi>i<\/mi><\/msub><mo>=<\/mo><msub><mi>w<\/mi><mi>i<\/mi><\/msub><mo>/<\/mo><munder><mo movablelimits=\"true\">∑<\/mo><mi>j<\/mi><\/munder><msub><mi>w<\/mi><mi>j<\/mi><\/msub><\/mrow><\/math>."}, {"id": "showContrib", "type": "toggle", "label": "Show contribution bars $-p_i\\log_2 p_i$", "value": true, "labelHtml": "Show contribution bars <math aria-label=\"-p_i\\log_2 p_i\"><mrow><mo>−<\/mo><msub><mi>p<\/mi><mi>i<\/mi><\/msub><msub><mi mathvariant=\"normal\">log<\/mi><mn>2<\/mn><\/msub><mspace width=\"0.1667em\"><\/mspace><msub><mi>p<\/mi><mi>i<\/mi><\/msub><\/mrow><\/math>"}], "explorations": [{"preset": {"n": 4, "w": [1, 0, 0, 0], "showContrib": true}}, {"preset": {"n": 4, "w": [0.25, 0.25, 0.25, 0.25], "showContrib": true}}]}</script>
+<footer class="wrap"><span class="footer-brand">Paper to Playground</span><p>Generated by paper-to-playground. All numbers on this page are computed live in your browser from the controls; nothing is loaded from the internet.</p></footer>
+<script id="p2p-spec" type="application/json">{"controls": [{"id": "n", "type": "number", "label": "Number of outcomes $n$", "min": 1.0, "max": 6.0, "step": 1.0, "value": 4.0, "help": "How many possible events there are.", "labelHtml": "Number of outcomes <math aria-label=\"n\"><mrow><mi>n<\/mi><\/mrow><\/math>", "helpHtml": "How many possible events there are."}, {"id": "p", "type": "vector", "label": "Probabilities $p_i$", "length": "n", "min": 0.0, "max": 1.0, "step": 0.05, "value": [0.25, 0.25, 0.25, 0.25], "labels": ["$p_1$", "$p_2$", "$p_3$", "$p_4$", "$p_5$", "$p_6$"], "fill": 0, "labelHtml": "Probabilities <math aria-label=\"p_i\"><mrow><msub><mi>p<\/mi><mi>i<\/mi><\/msub><\/mrow><\/math>"}, {"id": "uniform", "type": "toggle", "label": "Force equally likely ($p_i = 1/n$)", "value": false, "help": "When on, all probabilities are set equal, the most uncertain case.", "labelHtml": "Force equally likely (<math aria-label=\"p_i = 1/n\"><mrow><msub><mi>p<\/mi><mi>i<\/mi><\/msub><mo>=<\/mo><mn>1<\/mn><mo>/<\/mo><mi>n<\/mi><\/mrow><\/math>)", "helpHtml": "When on, all probabilities are set equal, the most uncertain case."}, {"id": "two", "type": "select", "label": "Two-outcome view ($p$ vs $1-p$)", "options": [{"value": "off", "label": "Off"}, {"value": "on", "label": "Show H(p, 1-p)"}], "value": "off", "labelHtml": "Two-outcome view (<math aria-label=\"p\"><mrow><mi>p<\/mi><\/mrow><\/math> vs <math aria-label=\"1-p\"><mrow><mn>1<\/mn><mo>−<\/mo><mi>p<\/mi><\/mrow><\/math>)"}], "explorations": [{"preset": {"n": 4, "p": [1, 0, 0, 0], "uniform": false, "two": "off"}}, {"preset": {"n": 2, "p": [0.5, 0.5], "uniform": true, "two": "off"}}]}</script>
 <script>
-/* Paper to Playground - generic helper library "L".
+/* Paper to Playground - generic helper library "PG".
  * Pure functions only (no DOM): math utilities, number formatting and SVG
  * string builders. Loaded into every generated page and into the V8 checker,
  * so generated compute()/render() code behaves identically in both places.
  * This file is generic: it contains no paper-specific content.
  */
-var L = (function () {
+var PG = (function () {
   'use strict';
   var L = {};
 
@@ -279,6 +409,44 @@ var L = (function () {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   };
 
+  /* Plain-text rendering of $TeX$ segments (SVG text and runtime labels
+   * cannot show MathML): Greek letters, accents, sub/superscripts, fractions. */
+  var SUB = { '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄', '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉', '+': '₊', '-': '₋', '=': '₌', '(': '₍', ')': '₎',
+    a: 'ₐ', e: 'ₑ', o: 'ₒ', x: 'ₓ', h: 'ₕ', k: 'ₖ', l: 'ₗ', m: 'ₘ', n: 'ₙ', p: 'ₚ', s: 'ₛ', t: 'ₜ', i: 'ᵢ', j: 'ⱼ', r: 'ᵣ', u: 'ᵤ', v: 'ᵥ' };
+  var SUP = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹', '+': '⁺', '-': '⁻', '=': '⁼', '(': '⁽', ')': '⁾',
+    n: 'ⁿ', i: 'ⁱ', T: 'ᵀ', t: 'ᵗ', k: 'ᵏ', '⊤': 'ᵀ' };
+  var SYM = { alpha: 'α', beta: 'β', gamma: 'γ', delta: 'δ', epsilon: 'ϵ', varepsilon: 'ε', zeta: 'ζ', eta: 'η', theta: 'θ', iota: 'ι', kappa: 'κ',
+    lambda: 'λ', mu: 'μ', nu: 'ν', xi: 'ξ', pi: 'π', rho: 'ρ', sigma: 'σ', tau: 'τ', phi: 'ϕ', varphi: 'φ', chi: 'χ', psi: 'ψ', omega: 'ω',
+    Gamma: 'Γ', Delta: 'Δ', Theta: 'Θ', Lambda: 'Λ', Xi: 'Ξ', Pi: 'Π', Sigma: 'Σ', Phi: 'Φ', Psi: 'Ψ', Omega: 'Ω', ell: 'ℓ',
+    cdot: '·', times: '×', div: '÷', pm: '±', le: '≤', leq: '≤', ge: '≥', geq: '≥', ne: '≠', neq: '≠', approx: '≈', equiv: '≡', sim: '∼',
+    propto: '∝', to: '→', rightarrow: '→', leftarrow: '←', infty: '∞', partial: '∂', nabla: '∇', sum: 'Σ', prod: 'Π', int: '∫', in: '∈',
+    top: '⊤', ldots: '…', cdots: '⋯', dots: '…', mid: '|', odot: '⊙', otimes: '⊗', circ: '∘', quad: ' ', qquad: '  ' };
+  function script(s, map, mark) {
+    var ch = Array.from(s);
+    if (ch.length && ch.every(function (c) { return map[c]; })) return ch.map(function (c) { return map[c]; }).join('');
+    return mark + (ch.length > 1 ? '(' + s + ')' : s);
+  }
+  function texToPlain(t) {
+    t = t.replace(/\\(?:mathrm|text|textrm|mathbf|mathit|boldsymbol|operatorname|mathsf)\{([^{}]*)\}/g, '$1');
+    t = t.replace(/\\left|\\right|\\big|\\Big|\\displaystyle/g, '');
+    t = t.replace(/\\([A-Za-z]+)/g, function (m, n) { return SYM[n] != null ? SYM[n] : m; });
+    t = t.replace(/\\(?:hat|widehat)\{(.)\}/g, '$1̂').replace(/\\(?:bar|overline)\{(.)\}/g, '$1̄')
+      .replace(/\\(?:tilde|widetilde)\{(.)\}/g, '$1̃').replace(/\\vec\{(.)\}/g, '$1⃗').replace(/\\dot\{(.)\}/g, '$1̇');
+    for (var pass = 0, prev = ''; pass < 4 && prev !== t; pass++) {  /* inner groups first, e.g. \frac{1}{\sqrt{d}} */
+      prev = t;
+      t = t.replace(/\\sqrt\{([^{}]*)\}/g, function (m, a) { return '√' + (a.length > 1 ? '(' + a + ')' : a); });
+      t = t.replace(/\\frac\{([^{}]*)\}\{([^{}]*)\}/g, function (m, a, b) { return (a.length > 1 ? '(' + a + ')' : a) + '/' + (b.length > 1 ? '(' + b + ')' : b); });
+    }
+    t = t.replace(/_\{([^{}]*)\}|_([^\s{}\\])/g, function (m, a, b) { return script(a != null ? a : b, SUB, '_'); });
+    t = t.replace(/\^\{([^{}]*)\}|\^([^\s{}\\])/g, function (m, a, b) { return script(a != null ? a : b, SUP, '^'); });
+    t = t.replace(/\\([,;:! ])/g, ' ').replace(/\\([A-Za-z]+)/g, '$1');
+    return t.replace(/[{}]/g, '').replace(/\\/g, '');
+  }
+  L.plain = function (s) {
+    s = String(s == null ? '' : s);
+    return s.indexOf('$') < 0 ? s : s.replace(/\$([^$]+)\$/g, function (m, t) { return texToPlain(t); });
+  };
+
   // ----------------------------------------------------------------- colors
   var PALETTE = ['#0072B2', '#E69F00', '#009E73', '#D55E00', '#CC79A7', '#56B4E9', '#8C6D1F', '#555555'];
   L.color = function (i) { return PALETTE[((i % PALETTE.length) + PALETTE.length) % PALETTE.length]; };
@@ -328,7 +496,7 @@ var L = (function () {
       x: num(x), y: num(y), 'font-size': o.size || 13, 'text-anchor': o.anchor || 'start',
       'dominant-baseline': o.baseline || null, fill: o.color || '#1f2933',
       'font-weight': o.weight || null, 'font-style': o.italic ? 'italic' : null, transform: tr, class: o.cls || null
-    }) + '>' + L.esc(str) + '</text>';
+    }) + '>' + L.esc(L.plain(str)) + '</text>';
   };
   L.line = function (x1, y1, x2, y2, o) {
     o = o || {};
@@ -545,180 +713,197 @@ var L = (function () {
 <script>
 function compute(s) {
   var n = Math.max(1, Math.min(6, Math.round(s.n)));
-  var w = (s.w || []).slice(0, n);
-  while (w.length < n) w.push(0);
-  w = w.map(function (x) { return (typeof x === "number" && isFinite(x) && x > 0) ? x : 0; });
-
-  var total = L.sum(w);
-  var p = w.map(function (x) { return total > 0 ? x / total : 1 / n; });
-  var contrib = p.map(function (pi) {
+  var raw = (s.p || []).slice(0, n);
+  while (raw.length < n) raw.push(0);
+  raw = raw.map(function (v) { return Math.max(0, Number(v) || 0); });
+  var sum = PG.sum(raw);
+  var p;
+  if (sum <= 0) {
+    p = raw.map(function () { return 1 / n; });
+  } else {
+    p = raw.map(function (v) { return v / sum; });
+  }
+  if (s.uniform) {
+    p = p.map(function () { return 1 / n; });
+  }
+  var terms = p.map(function (pi) {
     if (pi <= 0) return 0;
-    return -pi * L.log2(pi);
+    return -pi * PG.log2(pi);
   });
-  var H = L.sum(contrib);
-  var Hmax = L.log2(n);
-  var gap = Hmax - H;
-  var maxContribIdx = L.argmax(contrib);
+  var H = PG.sum(terms);
+  var maxH = PG.log2(n);
+  var uniformP = 1 / n;
+  var twoP = p.length > 0 ? p[0] : 0;
+  var twoH = 0;
+  if (twoP > 0) twoH += -twoP * PG.log2(twoP);
+  var q = 1 - twoP;
+  if (q > 0) twoH += -q * PG.log2(q);
+  var twoOn = s.two === "on";
   return {
     n: n,
-    w: w,
     p: p,
-    contrib: contrib,
+    terms: terms,
     H: H,
-    Hmax: Hmax,
-    gap: gap,
-    uniform: 1 / n,
-    maxContribIdx: maxContribIdx,
-    maxContrib: contrib[maxContribIdx],
-    sumP: L.sum(p),
-    sumContrib: L.sum(contrib)
+    maxH: maxH,
+    deficit: maxH - H,
+    uniformP: uniformP,
+    twoP: twoP,
+    twoH: twoH,
+    twoOn: twoOn ? 1 : 0,
+    sum: PG.sum(p)
   };
 }
 
 function render(s, r) {
-  var W = 760, Hh = 340;
+  var w = 760, h = 420;
   var body = "";
-  var padL = 56, padR = 20, padT = 46, padB = 54;
-  var gapX = 34;
-  var panelW = (W - padL - padR - gapX) / 2;
-  var panelH = Hh - padT - padB;
-  var leftX = padL, rightX = padL + panelW + gapX;
-  var topY = padT;
-
-  body += L.text(W / 2, 22, "Probabilities p_i  \u2192  contributions -p_i log2 p_i  \u2192  total H", { size: 15, anchor: "middle", weight: "bold" });
-
-  // ---- left panel: probabilities ----
   var n = r.n;
-  var barW = panelW / n;
-  var maxP = Math.max(1, L.max(r.p));
-  var pScale = L.scale(0, maxP, topY + panelH, topY);
-  body += L.text(leftX + panelW / 2, topY - 12, "Probabilities p_i", { size: 13, anchor: "middle", weight: "bold" });
-  body += L.line(leftX, topY + panelH, leftX + panelW, topY + panelH, { color: "#333", width: 1.5 });
-  body += L.line(leftX, topY, leftX, topY + panelH, { color: "#333", width: 1.5 });
-  body += L.text(leftX - 8, topY, "1", { size: 12, anchor: "end", baseline: "middle" });
-  body += L.text(leftX - 8, topY + panelH, "0", { size: 12, anchor: "end", baseline: "middle" });
-  var yUni = pScale(r.uniform);
-  body += L.line(leftX, yUni, leftX + panelW, yUni, { color: "#888", width: 1.2, dash: "5 4" });
-  body += L.text(leftX + panelW - 2, yUni - 6, "1/n = " + L.fmt(r.uniform, 3), { size: 12, anchor: "end", color: "#666" });
-  for (var i = 0; i < n; i++) {
-    var bx = leftX + i * barW + barW * 0.15;
-    var bw = barW * 0.7;
-    var y0 = pScale(r.p[i]);
-    var bh = (topY + panelH) - y0;
-    if (bh < 0) bh = 0;
-    body += L.rect(bx, y0, bw, bh, { fill: L.color(i), stroke: "#333", rx: 2, opacity: 0.85 });
-    body += L.text(bx + bw / 2, topY + panelH + 16, "p" + (i + 1), { size: 12, anchor: "middle" });
-    body += L.text(bx + bw / 2, y0 - 6, L.fmt(r.p[i], 3), { size: 12, anchor: "middle" });
-  }
+  var colors = [];
+  for (var i = 0; i < n; i++) colors.push(PG.color(i));
 
-  // ---- right panel: contributions ----
-  var maxC = Math.max(0.001, L.max(r.contrib), r.Hmax);
-  var cScale = L.scale(0, maxC, topY + panelH, topY);
-  body += L.text(rightX + panelW / 2, topY - 12, "Contributions -p_i log2 p_i (bits)", { size: 13, anchor: "middle", weight: "bold" });
-  body += L.line(rightX, topY + panelH, rightX + panelW, topY + panelH, { color: "#333", width: 1.5 });
-  body += L.line(rightX, topY, rightX, topY + panelH, { color: "#333", width: 1.5 });
-  body += L.text(rightX - 8, topY, L.fmt(maxC, 2), { size: 12, anchor: "end", baseline: "middle" });
-  body += L.text(rightX - 8, topY + panelH, "0", { size: 12, anchor: "end", baseline: "middle" });
-  var yMax = cScale(r.Hmax);
-  body += L.line(rightX, yMax, rightX + panelW, yMax, { color: "#c0392b", width: 1.4, dash: "6 4" });
-  body += L.text(rightX + panelW - 2, yMax - 6, "log2 n = " + L.fmt(r.Hmax, 3), { size: 12, anchor: "end", color: "#c0392b" });
-  var yH = cScale(r.H);
-  body += L.line(rightX, yH, rightX + panelW, yH, { color: "#1a5276", width: 2 });
-  body += L.text(rightX + 4, yH - 6, "H = " + L.fmt(r.H, 3) + " bits", { size: 12, anchor: "start", color: "#1a5276", weight: "bold" });
-  if (s.showContrib) {
-    var cbarW = panelW / n;
-    for (var j = 0; j < n; j++) {
-      var cx = rightX + j * cbarW + cbarW * 0.15;
-      var cw = cbarW * 0.7;
-      var cy0 = cScale(r.contrib[j]);
-      var ch = (topY + panelH) - cy0;
-      if (ch < 0) ch = 0;
-      body += L.rect(cx, cy0, cw, ch, { fill: L.color(j), stroke: "#333", rx: 2, opacity: 0.85 });
-      body += L.text(cx + cw / 2, topY + panelH + 16, "p" + (j + 1), { size: 12, anchor: "middle" });
-      if (r.contrib[j] > 0.0005) {
-        body += L.text(cx + cw / 2, cy0 - 6, L.fmt(r.contrib[j], 3), { size: 12, anchor: "middle" });
-      }
+  // Left panel: probabilities
+  var lx = 40, ly = 60, lw = 320, lh = 280;
+  body += PG.text(lx, ly - 24, "Probabilities $p_i$", { size: 15, weight: "bold" });
+  var pVals = r.p;
+  var pLabels = [];
+  for (var j = 0; j < n; j++) pLabels.push("$p_{" + (j + 1) + "}$");
+  body += PG.bars({
+    x: lx, y: ly, w: lw, h: lh,
+    values: pVals, labels: pLabels,
+    title: "", yLabel: "probability",
+    min: 0, max: 1,
+    colors: colors,
+    fmt: function (v) { return PG.fmt(v, 2); },
+    refLines: [{ value: r.uniformP, label: "1/n = " + PG.fmt(r.uniformP, 2) }]
+  });
+
+  // Right panel: contributions
+  var rx = 420, ry = 60, rw = 300, rh = 280;
+  body += PG.text(rx, ry - 24, "Contributions $-p_i\\log_2 p_i$", { size: 15, weight: "bold" });
+  var cVals = r.terms;
+  var cLabels = [];
+  for (var k = 0; k < n; k++) cLabels.push("$c_{" + (k + 1) + "}$");
+  var cMax = Math.max(0.5, r.maxH);
+  body += PG.bars({
+    x: rx, y: ry, w: rw, h: rh,
+    values: cVals, labels: cLabels,
+    title: "", yLabel: "bits",
+    min: 0, max: cMax,
+    colors: colors,
+    fmt: function (v) { return PG.fmt(v, 3); },
+    refLines: [{ value: r.maxH, label: "log2 n = " + PG.fmt(r.maxH, 2) }]
+  });
+
+  // Total entropy bar
+  var tx = 40, ty = 370, tw = 680, th = 22;
+  body += PG.text(tx, ty - 8, "Total entropy H = " + PG.fmt(r.H, 3) + " bits", { size: 14, weight: "bold" });
+  var frac = r.maxH > 0 ? PG.clamp(r.H / r.maxH, 0, 1) : 0;
+  body += PG.rect(tx, ty, tw, th, { fill: "#e8e8e8", stroke: "#999", rx: 4 });
+  body += PG.rect(tx, ty, tw * frac, th, { fill: PG.color(0), rx: 4 });
+  body += PG.text(tx + tw + 6, ty + th / 2, PG.fmt(r.H, 3), { size: 13, anchor: "start", baseline: "middle" });
+
+  // Two-outcome overlay when enabled
+  if (r.twoOn) {
+    var ox = 40, oy = 300, ow = 680, oh = 60;
+    body += PG.text(ox, oy - 6, "Two-outcome view: H(p, 1-p) with p = " + PG.fmt(r.twoP, 3) + " -> " + PG.fmt(r.twoH, 3) + " bits", { size: 13, weight: "bold" });
+    var pts = [];
+    for (var t = 0; t <= 40; t++) {
+      var pp = t / 40;
+      var hh = 0;
+      if (pp > 0) hh += -pp * PG.log2(pp);
+      if (1 - pp > 0) hh += -(1 - pp) * PG.log2(1 - pp);
+      pts.push([ox + pp * ow, oy + oh - (hh / 1) * oh]);
     }
-  } else {
-    body += L.text(rightX + panelW / 2, topY + panelH / 2, "contribution bars hidden", { size: 13, anchor: "middle", color: "#888" });
+    body += PG.plot({
+      x: ox, y: oy, w: ow, h: oh,
+      series: [{ points: pts, label: "H(p,1-p)", color: PG.color(2) }],
+      xDomain: [0, 1], yDomain: [0, 1],
+      xLabel: "p", yLabel: "bits",
+      markers: [{ x: r.twoP, y: r.twoH, label: "current", color: PG.color(0) }]
+    });
   }
 
-  body += L.text(W / 2, Hh - 12, "H = " + L.fmt(r.H, 3) + " bits    Hmax = log2(" + n + ") = " + L.fmt(r.Hmax, 3) + " bits    gap = " + L.fmt(r.gap, 3) + " bits", { size: 13, anchor: "middle", weight: "bold" });
-
-  return L.svg(W, Hh, body);
+  return PG.svg(w, h, body);
 }
 
 function show(s, r) {
   var rows = [];
-  rows.push({ label: "n (number of outcomes)", value: r.n, digits: 0, note: "sets the ceiling log2 n" });
-  rows.push({ label: "sum of weights", value: L.sum(r.w), digits: 3, note: "normalizing constant" });
-  rows.push({ label: "p_i (normalized)", value: r.p, digits: 3, colLabels: r.p.map(function (_, i) { return "p" + (i + 1); }), note: "p_i = w_i / sum_j w_j" });
-  rows.push({ label: "sum p_i", value: r.sumP, digits: 6, note: "must equal 1" });
-  rows.push({ label: "-p_i log2 p_i", value: r.contrib, digits: 3, colLabels: r.contrib.map(function (_, i) { return "p" + (i + 1); }), highlight: [r.maxContribIdx], note: "largest single contribution highlighted" });
-  rows.push({ label: "H (entropy, bits)", value: r.H, digits: 3, note: "sum of the contributions" });
-  rows.push({ label: "Hmax = log2 n", value: r.Hmax, digits: 3, note: "attained only when all p_i = 1/n" });
-  rows.push({ label: "gap = Hmax - H", value: r.gap, digits: 3, note: "0 exactly when the distribution is uniform" });
+  rows.push({ label: "Number of outcomes $n$", value: r.n, digits: 0 });
+  rows.push({ label: "Probabilities $p_i$", value: r.p, digits: 3, colLabels: r.p.map(function (_, i) { return "$p_{" + (i + 1) + "}$"; }) });
+  rows.push({ label: "Contributions $-p_i\\log_2 p_i$", value: r.terms, digits: 4, colLabels: r.terms.map(function (_, i) { return "$c_{" + (i + 1) + "}$"; }) });
+  rows.push({ label: "Total entropy $H$ (bits)", value: r.H, digits: 4, highlight: true });
+  rows.push({ label: "Maximum $\\log_2 n$ (bits)", value: r.maxH, digits: 4 });
+  rows.push({ label: "Deficit $\\log_2 n - H$", value: r.deficit, digits: 4 });
+  rows.push({ label: "Two-outcome $H(p, 1-p)$ (bits)", value: r.twoH, digits: 4 });
+  rows.push({ label: "Two-outcome view active", value: r.twoOn ? "on" : "off" });
   return rows;
 }
 
 function checks(s, r) {
   var out = [];
-  var tol = 1e-9;
+  var n = r.n;
 
+  // Certainty gives zero bits
+  var certain = { n: n, p: [], uniform: false, two: "off" };
+  for (var i = 0; i < n; i++) certain.p.push(i === 0 ? 1 : 0);
+  var rc = compute(certain);
   out.push({
-    name: "Probabilities sum to 1",
-    pass: Math.abs(r.sumP - 1) < 1e-9,
-    detail: "sum p_i = " + L.fmt(r.sumP, 6)
+    name: "Certainty gives 0 bits",
+    pass: Math.abs(rc.H) < 1e-9,
+    detail: "With p = (1,0,...,0), H = " + PG.fmt(rc.H, 6) + " bits."
   });
 
-  var inRange = r.p.every(function (pi) { return pi >= -tol && pi <= 1 + tol; });
+  // Four equally likely outcomes give 2 bits
+  var four = { n: 4, p: [0.25, 0.25, 0.25, 0.25], uniform: false, two: "off" };
+  var r4 = compute(four);
   out.push({
-    name: "Every p_i lies in [0, 1]",
-    pass: inRange,
-    detail: "min p_i = " + L.fmt(L.min(r.p), 6) + ", max p_i = " + L.fmt(L.max(r.p), 6)
+    name: "Four equally likely outcomes give 2 bits",
+    pass: Math.abs(r4.H - 2) < 1e-9,
+    detail: "With p = (0.25,0.25,0.25,0.25), H = " + PG.fmt(r4.H, 6) + " bits."
   });
 
+  // H >= 0
   out.push({
-    name: "H is non-negative",
-    pass: r.H >= -tol,
-    detail: "H = " + L.fmt(r.H, 6) + " bits"
+    name: "H is nonnegative",
+    pass: r.H >= -1e-9,
+    detail: "H = " + PG.fmt(r.H, 6) + " bits."
   });
 
-  var zeroCase = r.p.every(function (pi) { return pi <= tol || Math.abs(pi - 1) < tol; });
-  var hIsZero = Math.abs(r.H) < 1e-9;
-  out.push({
-    name: "H = 0 exactly when one outcome is certain",
-    pass: (zeroCase === hIsZero),
-    detail: "certain = " + zeroCase + ", H = " + L.fmt(r.H, 6)
-  });
-
-  var uniform = r.p.every(function (pi) { return Math.abs(pi - r.uniform) < 1e-9; });
-  var atMax = Math.abs(r.H - r.Hmax) < 1e-9;
-  out.push({
-    name: "H = log2 n exactly when all p_i = 1/n",
-    pass: (uniform === atMax),
-    detail: "uniform = " + uniform + ", H = " + L.fmt(r.H, 6) + ", log2 n = " + L.fmt(r.Hmax, 6)
-  });
-
+  // H <= log2 n
   out.push({
     name: "H never exceeds log2 n",
-    pass: r.H <= r.Hmax + 1e-9,
-    detail: "H = " + L.fmt(r.H, 6) + " <= " + L.fmt(r.Hmax, 6)
+    pass: r.H <= r.maxH + 1e-9,
+    detail: "H = " + PG.fmt(r.H, 6) + " <= log2 n = " + PG.fmt(r.maxH, 6) + "."
   });
 
+  // Zero probabilities contribute zero
+  var zeroOk = true;
+  for (var k = 0; k < r.p.length; k++) {
+    if (r.p[k] === 0 && Math.abs(r.terms[k]) > 1e-12) zeroOk = false;
+  }
   out.push({
-    name: "Contributions sum to H",
-    pass: Math.abs(r.sumContrib - r.H) < 1e-9,
-    detail: "sum contributions = " + L.fmt(r.sumContrib, 6) + ", H = " + L.fmt(r.H, 6)
+    name: "Zero probabilities contribute 0",
+    pass: zeroOk,
+    detail: "Every p_i = 0 has contribution -p_i log2 p_i = 0."
   });
 
-  var noNaN = r.p.every(function (pi) { return isFinite(pi); }) &&
-    r.contrib.every(function (c) { return isFinite(c); }) &&
-    isFinite(r.H) && isFinite(r.Hmax);
+  // Uniform maximizes H
+  var uni = { n: n, p: [], uniform: true, two: "off" };
+  for (var m = 0; m < n; m++) uni.p.push(1 / n);
+  var ru = compute(uni);
   out.push({
-    name: "No NaN or Infinity in any computed value",
-    pass: noNaN,
-    detail: "all p_i, contributions, H and log2 n are finite"
+    name: "Uniform distribution maximizes H",
+    pass: ru.H >= r.H - 1e-9 && Math.abs(ru.H - r.maxH) < 1e-9,
+    detail: "Uniform H = " + PG.fmt(ru.H, 6) + " >= current H = " + PG.fmt(r.H, 6) + "."
+  });
+
+  // Two-outcome view consistency
+  var twoOn = compute({ n: n, p: r.p, uniform: s.uniform, two: "on" });
+  var twoOff = compute({ n: n, p: r.p, uniform: s.uniform, two: "off" });
+  out.push({
+    name: "Two-outcome toggle changes the view",
+    pass: twoOn.twoOn !== twoOff.twoOn,
+    detail: "twoOn flag = " + twoOn.twoOn + " vs " + twoOff.twoOn + "."
   });
 
   return out;
@@ -755,12 +940,12 @@ function checks(s, r) {
     if (html != null) e.innerHTML = html;
     return e;
   }
-  function esc(s) { return L.esc(s == null ? '' : s); }
+  function esc(s) { return PG.esc(PG.plain(s == null ? '' : s)); }  /* $TeX$ in model strings -> Unicode */
   function decimalsOf(step) {
     var s = String(step == null ? 1 : step);
     return s.indexOf('.') >= 0 ? s.split('.')[1].length : 0;
   }
-  function fmtControl(c, v) { return L.fmt(Number(v), Math.max(decimalsOf(c.step), 0)); }
+  function fmtControl(c, v) { return PG.fmt(Number(v), Math.max(decimalsOf(c.step), 0)); }
 
   // ------------------------------------------------------------ dimensions
   function dimValue(d, fallback) {
@@ -793,7 +978,7 @@ function checks(s, r) {
 
   function defaults() {
     var s = {};
-    CONTROLS.forEach(function (c) { s[c.id] = L.copy(c.value); });
+    CONTROLS.forEach(function (c) { s[c.id] = PG.copy(c.value); });
     return s;
   }
   function labelOf(c) { return c.labelHtml || esc(c.label || c.id); }
@@ -924,7 +1109,7 @@ function checks(s, r) {
         rowv.forEach(function (x, j) {
           var td = el('td');
           var n = numberInput(c, x, function (val) {
-            var M = L.copy(state[c.id]); M[i][j] = val; setValue(c, M);
+            var M = PG.copy(state[c.id]); M[i][j] = val; setValue(c, M);
           }, (c.label || c.id) + ' [' + (i + 1) + ',' + (j + 1) + ']');
           n.setAttribute('aria-label', (c.label || c.id) + ' row ' + (i + 1) + ' column ' + (j + 1));
           td.appendChild(n);
@@ -959,7 +1144,7 @@ function checks(s, r) {
   }
 
   // -------------------------------------------------------------- outputs
-  function cellText(x, digits) { return typeof x === 'number' ? L.fmt(x, digits) : esc(x); }
+  function cellText(x, digits) { return typeof x === 'number' ? PG.fmt(x, digits) : esc(x); }
   function valueHtml(it) {
     var v = it.value, d = it.digits != null ? it.digits : 3;
     if (Array.isArray(v) && v.length && Array.isArray(v[0])) {
@@ -989,15 +1174,15 @@ function checks(s, r) {
     if (errBox) { errBox.innerHTML = ''; errBox.hidden = true; }
     if (!MODEL.compute) { showError('Setup', 'interactive code did not load'); return; }
     var result;
-    try { result = MODEL.compute(L.copy(state)); } catch (e) { showError('compute', e); return; }
+    try { result = MODEL.compute(PG.copy(state)); } catch (e) { showError('compute', e); return; }
     try {
       var vis = $('p2p-visual');
-      if (vis && MODEL.render) vis.innerHTML = MODEL.render(L.copy(state), result);
+      if (vis && MODEL.render) vis.innerHTML = MODEL.render(PG.copy(state), result);
     } catch (e) { showError('render', e); }
     try {
       var vals = $('p2p-values');
       if (vals && MODEL.show) {
-        var items = MODEL.show(L.copy(state), result) || [];
+        var items = MODEL.show(PG.copy(state), result) || [];
         vals.innerHTML = items.map(function (it) {
           return '<div class="p2p-value' + (it.highlight ? ' p2p-value-hl' : '') + '"><div class="p2p-value-label">' + esc(it.label) + '</div>' +
             '<div class="p2p-value-body">' + valueHtml(it) + '</div>' + (it.note ? '<div class="p2p-value-note">' + esc(it.note) + '</div>' : '') + '</div>';
@@ -1007,7 +1192,7 @@ function checks(s, r) {
     try {
       var chk = $('p2p-checks');
       if (chk && MODEL.checks) {
-        var cs = MODEL.checks(L.copy(state), result) || [];
+        var cs = MODEL.checks(PG.copy(state), result) || [];
         chk.innerHTML = cs.map(function (c) {
           return '<li class="' + (c.pass ? 'p2p-pass' : 'p2p-fail') + '"><span class="p2p-mark" aria-hidden="true">' + (c.pass ? '✓' : '✗') + '</span> ' +
             '<span class="p2p-check-name">' + esc(c.name) + '</span>' + (c.detail != null && c.detail !== '' ? ' <span class="p2p-check-detail">' + esc(c.detail) + '</span>' : '') + '</li>';
@@ -1021,7 +1206,7 @@ function checks(s, r) {
     var ex = (SPEC.explorations || [])[i];
     if (!ex || !ex.preset) return;
     state = defaults();
-    Object.keys(ex.preset).forEach(function (k) { if (k in state) state[k] = L.copy(ex.preset[k]); });
+    Object.keys(ex.preset).forEach(function (k) { if (k in state) state[k] = PG.copy(ex.preset[k]); });
     conformAll();
     buildControls();
     update();
@@ -1043,7 +1228,7 @@ function checks(s, r) {
       document.querySelectorAll('.p2p-exploration').forEach(function (card) { card.classList.remove('p2p-active'); });
     });
     update();
-    window.P2P = { get state() { return L.copy(state); }, update: update, applyPreset: applyPreset };
+    window.P2P = { get state() { return PG.copy(state); }, update: update, applyPreset: applyPreset };
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

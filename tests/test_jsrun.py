@@ -2,7 +2,7 @@
 
 import unittest
 
-from p2p.jsrun import conform, control_variants, execute
+from p2p.jsrun import clipped_labels, conform, control_variants, execute
 
 CONTROLS = [
     {"id": "n", "type": "range", "label": "n", "min": 1, "max": 4, "step": 1, "value": 2},
@@ -15,10 +15,10 @@ SPEC = {
     "tests": [{"name": "sum", "state": {"n": 2, "w": [1, 2]}, "expect": [{"path": "total", "value": 3}]}],
 }
 GOOD = """
-function compute(s) { var t = L.sum(s.w); return { total: s.k ? t : -t, share: s.w.map(function (x) { return t > 0 ? x / t : 0; }) }; }
-function render(s, r) { return L.svg(200, 100, L.bars({x: 0, y: 0, w: 200, h: 100, values: r.share})); }
+function compute(s) { var t = PG.sum(s.w); return { total: s.k ? t : -t, share: s.w.map(function (x) { return t > 0 ? x / t : 0; }) }; }
+function render(s, r) { return PG.svg(200, 100, PG.bars({x: 0, y: 0, w: 200, h: 100, values: r.share})); }
 function show(s, r) { return [{label: "total", value: r.total}, {label: "shares", value: r.share}]; }
-function checks(s, r) { return [{name: "shares sum to 1 or 0", pass: Math.abs(L.sum(r.share) - 1) < 1e-9 || L.sum(r.share) === 0}]; }
+function checks(s, r) { return [{name: "shares sum to 1 or 0", pass: Math.abs(PG.sum(r.share) - 1) < 1e-9 || PG.sum(r.share) === 0}]; }
 """
 
 
@@ -61,11 +61,31 @@ class ExecuteTest(unittest.TestCase):
         self.assertTrue(any("known-answer test 'sum' failed" in p for p in rep.problems))
 
     def test_bad_svg_and_failing_check(self):
-        bad = GOOD.replace("return L.svg(200, 100,", "return '<svg><text>' + r.missing + '</text></svg>' || L.svg(200, 100,")
-        bad = bad.replace("< 1e-9 || L.sum(r.share) === 0", "< 1e-9")
+        bad = GOOD.replace("return PG.svg(200, 100,", "return '<svg><text>' + r.missing + '</text></svg>' || PG.svg(200, 100,")
+        bad = bad.replace("< 1e-9 || PG.sum(r.share) === 0", "< 1e-9")
         rep = execute(SPEC, bad)
         self.assertTrue(any("undefined" in p for p in rep.problems), rep.problems)
         self.assertTrue(any("live check" in p for p in rep.problems), rep.problems)
+
+    def test_clipped_labels(self):
+        svg = ('<svg viewBox="0 0 200 100"><text x="190" y="50">a long label here</text>'
+               '<text x="100" y="50" text-anchor="middle">ok</text>'
+               '<g transform="translate(150,0)"><text x="60" y="20">far</text></g>'
+               '<g transform="rotate(-90)"><text x="0" y="0">skipped</text></g></svg>')
+        found = clipped_labels(svg)
+        self.assertEqual(len(found), 2)
+        self.assertIn("a long label here", found[0])
+
+    def test_plain_tex_for_svg_labels(self):
+        from py_mini_racer import MiniRacer
+        from p2p.jsrun import TEMPLATE_DIR
+        ctx = MiniRacer()
+        ctx.eval((TEMPLATE_DIR / "lib.js").read_text(encoding="utf-8"))
+        cases = {r"inputs $x_i$": "inputs xᵢ", r"$\frac{1}{\sqrt{d_k}}$": "1/(√(dₖ))",
+                 r"$\hat{x}_i$": "x̂ᵢ", "costs $5": "costs $5", r"$QK^\top$": "QKᵀ"}
+        for tex, want in cases.items():
+            self.assertEqual(ctx.call("PG.plain", tex), want)
+        self.assertIn("σ", ctx.call("PG.text", 0, 0, r"$\sigma$"))
 
     def test_missing_function(self):
         rep = execute(SPEC, GOOD.replace("function checks", "function checkz"))

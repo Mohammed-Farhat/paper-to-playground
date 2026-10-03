@@ -35,6 +35,15 @@ class ExtractTest(unittest.TestCase):
         self.assertEqual(parse_spec(j), {"x": 1})
         self.assertIn("function compute", js)
 
+    def test_code_only_reply_has_no_json(self):
+        j, js = extract_blocks("```javascript\nfunction compute(s) { return {a: 1}; }\n```")
+        self.assertIsNone(j)
+        self.assertIn("compute", js)
+
+    def test_unfenced_json_object(self):
+        j, _ = extract_blocks('Here: {"title": "x"} done')
+        self.assertEqual(parse_spec(j), {"title": "x"})
+
     def test_truncated_js_block(self):
         _, js = extract_blocks('```json\n{}\n```\n```js\nfunction compute(s){\n  return 1')
         self.assertIn("return 1", js)
@@ -52,6 +61,7 @@ def _spec(**over):
                          {"title": "b", "change": "c", "observe": "o", "why": "w"}],
         "pitfall": {"kind": "assumption", "text": "t"},
         "grounding": {"section": "S1", "from_source": ["a"], "our_additions": ["b"]},
+        "plan": {"coverage": [{"outcome": "vary n", "where": ["control:n", "exploration:1"]}]},
     }
     spec.update(over)
     return spec
@@ -70,6 +80,16 @@ class NormalizeTest(unittest.TestCase):
         _, errors, _ = normalize_spec(_spec(controls=[], explorations=[]))
         self.assertTrue(any("2 valid controls" in e for e in errors))
         self.assertTrue(any("2 guided explorations" in e for e in errors))
+
+    def test_coverage_references_are_checked(self):
+        bad = _spec(plan={"coverage": [{"outcome": "o", "where": ["control:nope", "exploration:3", "visual", "control:N"]}]})
+        spec, errors, _ = normalize_spec(bad)
+        self.assertEqual(errors, [])  # coverage issues are warnings, never revision triggers
+        self.assertTrue(any("unknown control 'nope'" in w for w in spec["coverage_warnings"]))
+        self.assertTrue(any("unknown exploration '3'" in w for w in spec["coverage_warnings"]))
+        self.assertEqual(spec["coverage"][0]["where"], ["visual", "control:n"])  # near-miss id corrected
+        spec, _, _ = normalize_spec(_spec(plan={}))
+        self.assertTrue(any("empty" in w for w in spec["coverage_warnings"]))
 
     def test_bad_dimension_reference(self):
         bad = _spec()

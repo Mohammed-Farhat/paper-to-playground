@@ -29,6 +29,12 @@ FINISH_RESERVE_SECONDS = 20.0
 
 RETRYABLE_STATUS = {408, 409, 425, 429, 500, 502, 503, 504, 520, 522, 524, 529}
 
+# Provider routing (same model, MODEL_ID unchanged). Measured on this model:
+# default price-based routing gave 35-115 tok/s, BaseTen 200-300 tok/s,
+# Together about 160 tok/s. Fallbacks stay enabled, so if neither provider is
+# available OpenRouter routes the request as usual.
+PROVIDER_PREFERENCES = {"order": ["baseten", "together"], "allow_fallbacks": True}
+
 
 class BudgetExceeded(RuntimeError):
     pass
@@ -81,6 +87,7 @@ class CallResult:
     finish_reason: str | None
     usage: dict[str, Any] = field(default_factory=dict)
     generation_id: str | None = None
+    provider: str | None = None
     seconds: float = 0.0
     attempts: int = 1
 
@@ -134,7 +141,7 @@ class OpenRouterClient:
             result.attempts = attempt
             usage_fields = self._account(result.usage, len(result.text))
             self.trace.log(stage, "llm_call", "ok", purpose=purpose, attempt=attempt,
-                           model=self.model, generation_id=result.generation_id,
+                           model=self.model, provider=result.provider, generation_id=result.generation_id,
                            finish_reason=result.finish_reason, max_tokens=cap,
                            output_chars=len(result.text), elapsed_s=result.seconds,
                            **usage_fields)
@@ -194,6 +201,8 @@ class OpenRouterClient:
             body["temperature"] = self.temperature
         if self.reasoning is not None:
             body["reasoning"] = self.reasoning
+        if PROVIDER_PREFERENCES:
+            body["provider"] = PROVIDER_PREFERENCES
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
@@ -218,6 +227,7 @@ class OpenRouterClient:
             usage: dict[str, Any] | None = None
             finish: str | None = None
             gen_id: str | None = None
+            provider: str | None = None
             try:
                 for raw in resp.iter_lines():
                     if time.monotonic() > deadline:
@@ -241,6 +251,7 @@ class OpenRouterClient:
                         raise _RetryableError(f"stream error: {msg}", chunk.get("usage"),
                                               sum(map(len, parts)))
                     gen_id = chunk.get("id") or gen_id
+                    provider = chunk.get("provider") or provider
                     for choice in chunk.get("choices") or []:
                         delta = choice.get("delta") or {}
                         if delta.get("content"):
@@ -257,7 +268,8 @@ class OpenRouterClient:
         text = "".join(parts)
         if not text.strip():
             raise _RetryableError(f"empty response (finish_reason={finish})", usage, 0)
-        return CallResult(text=text, finish_reason=finish, usage=usage or {}, generation_id=gen_id)
+        return CallResult(text=text, finish_reason=finish, usage=usage or {}, generation_id=gen_id,
+                          provider=provider)
 
 
 class _RetryableError(Exception):

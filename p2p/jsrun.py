@@ -266,15 +266,71 @@ _ENTITY_RE = re.compile(r"&(?!#\d+;|#x[0-9a-fA-F]+;|amp;|lt;|gt;|quot;|apos;)[A-
 
 def _svg_problem(svg: str) -> str | None:
     if "<svg" not in svg:
-        return "render() must return an <svg> string (use L.svg(w, h, body))"
+        return "render() must return an <svg> string (use PG.svg(w, h, body))"
     try:
         ET.fromstring(_ENTITY_RE.sub("&#160;", svg.strip()))
     except ET.ParseError as exc:
-        return f"render() SVG is not well-formed ({exc}); escape text with L.esc or use L.text"
+        return f"render() SVG is not well-formed ({exc}); escape text with PG.esc or use PG.text"
     m = re.search(r"\b(NaN|undefined|Infinity)\b", svg)
     if m:
         return f"render() output contains '{m.group(1)}' (a coordinate or label was not computed)"
     return None
+
+
+_TRANSLATE_RE = re.compile(r"\s*translate\(\s*([-+\d.eE]+)(?:[\s,]+([-+\d.eE]+))?\s*\)\s*")
+
+
+def _num_attr(value, default: float = 0.0) -> float:
+    try:
+        return float(str(value).replace("px", "").split()[0].split(",")[0])
+    except (ValueError, IndexError):
+        return default
+
+
+def clipped_labels(svg: str) -> list[str]:
+    """Text labels that extend outside the SVG viewBox (they are cut off when drawn).
+
+    Width is estimated from font size and character count, so only clear
+    overflows are reported. Elements under non-translate transforms are skipped.
+    """
+    try:
+        root = ET.fromstring(_ENTITY_RE.sub("&#160;", svg.strip()))
+    except ET.ParseError:
+        return []
+    box = (root.get("viewBox") or "").replace(",", " ").split()
+    if len(box) != 4:
+        return []
+    x0, y0, w, h = (_num_attr(v) for v in box)
+    found: list[str] = []
+
+    def walk(el, dx: float, dy: float) -> None:
+        tr = el.get("transform")
+        if tr:
+            m = _TRANSLATE_RE.fullmatch(tr)
+            if not m:
+                return  # rotated/scaled content: geometry not estimated
+            dx += float(m.group(1))
+            dy += float(m.group(2) or 0)
+        if el.tag.split("}")[-1] == "text":
+            label = "".join(el.itertext()).strip()
+            if label:
+                size = _num_attr(el.get("font-size"), 13.0)
+                x = _num_attr(el.get("x")) + dx
+                y = _num_attr(el.get("y")) + dy
+                width = 0.55 * size * len(label)
+                anchor = el.get("text-anchor", "start")
+                left = x - width / 2 if anchor == "middle" else x - width if anchor == "end" else x
+                top = y - size / 2 if el.get("dominant-baseline") in ("middle", "central") else y - 0.8 * size
+                over = max(x0 - left, left + width - (x0 + w), y0 - top, top + size - (y0 + h))
+                if over > max(8.0, 0.3 * min(width, 200)):
+                    found.append(f"\"{label[:40]}\" at x={x:.0f}, y={y:.0f} (anchor {anchor}) in a "
+                                 f"{w:.0f}x{h:.0f} viewBox")
+            return
+        for child in el:
+            walk(child, dx, dy)
+
+    walk(root, 0.0, 0.0)
+    return found
 
 
 def execute(spec: dict, code: str) -> ExecReport:
@@ -308,7 +364,14 @@ def execute(spec: dict, code: str) -> ExecReport:
         res = eng.run(state)
         if res.get("error"):
             e = res["error"]
-            note(f"{e['stage']}() throws: {e['msg']}", where)
+            hint = ""
+            m = re.search(r"PG\.(\w+) is not a function", e["msg"])
+            if m:
+                hint = (f" (PG.{m.group(1)} is not one of the listed helpers; use a listed one or write "
+                        f"the function yourself)")
+            elif "PG" in e["msg"]:
+                hint = " (a local variable may be hiding the helper library PG; rename it)"
+            note(f"{e['stage']}() throws: {e['msg']}{hint}", where)
             return res
         if res.get("nonfinite"):
             note("compute() returns non-finite values (" + ", ".join(res["nonfinite"][:3]) + ")", where)
@@ -323,6 +386,11 @@ def execute(spec: dict, code: str) -> ExecReport:
                 p = _svg_problem(res["svg"] or "")
                 if p:
                     note(p, where)
+                elif where == "default state" or where.startswith("exploration"):
+                    cut = clipped_labels(res["svg"])
+                    if cut:
+                        note(f"render(): {len(cut)} text label(s) extend outside the SVG viewBox and are cut off: "
+                             f"{'; '.join(cut[:3])}. Move them inside or enlarge the PG.svg(w, h) size", where)
         if res.get("showError"):
             note(f"show() error: {res['showError']}", where)
         for b in res.get("showBad") or []:
@@ -332,7 +400,12 @@ def execute(spec: dict, code: str) -> ExecReport:
         for c in res.get("checks") or []:
             rep.checks_seen += 1
             if not c["pass"]:
-                note(f"live check \"{c['name']}\" fails" + (f" ({c['detail']})" if c["detail"] else ""), where)
+                note(f"live check \"{c['name']}\" fails, but every check must be exactly true in every state the "
+                     f"learner can reach. If the code is right, the claim itself only holds in a special case "
+                     f"(a limiting value, a particular parameter, or approximately): restate the check so it is "
+                     f"exactly true (put the condition in its name and test only when it applies, or compute the "
+                     f"special case inside the check); otherwise fix the code",
+                     where + (f": {c['detail']}" if c["detail"] else ""))
         return res
 
     base_state = default_state(controls)

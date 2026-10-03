@@ -7,7 +7,7 @@ This file is for the teammate who owns the page design. The agent fills one gene
 | File | What it is |
 |---|---|
 | `templates/page.html` | Page layout and all CSS, in the `<style>` block. **This is the main design file.** |
-| `templates/lib.js` (optional) | SVG chart helpers. Only the colors and font sizes are design choices: `PALETTE`, `L.heat`, `L.diverge`, and the `size:` values in `L.bars` / `L.heatmap` / `L.plot`. |
+| `templates/lib.js` (optional) | SVG chart helpers. Only the colors and font sizes are design choices: `PALETTE`, `PG.heat`, `PG.diverge`, and the `size:` values in `PG.bars` / `PG.heatmap` / `PG.plot`. |
 
 Do not edit `templates/runtime.js` or anything in `p2p/` without telling the backend owner. The checks depend on them.
 
@@ -24,7 +24,7 @@ Do not edit `templates/runtime.js` or anything in `p2p/` without telling the bac
 
 `{{TITLE}}` `{{HOOK}}` `{{META}}` `{{IDEA}}` `{{WHY}}` `{{EQUATIONS}}` `{{SYMBOLS}}` `{{VISUAL_CAPTION}}` `{{EXPLORATIONS}}` `{{PITFALL_HEADING}}` `{{PITFALL_TEXT}}` `{{GROUNDING}}` `{{FOOTER}}` `{{SPEC_JSON}}` `{{LIB_JS}}` `{{MODEL_JS}}` `{{RUNTIME_JS}}`
 
-- Each placeholder must appear exactly once. You may move them around.
+- Each placeholder must appear at least once; you may move them around. `{{TITLE}}` is used twice, in `<title>` and in `<h1>`, so the browser tab shows the concept.
 - Keep the four `<script>` blocks at the end of `<body>`, in this order: spec JSON, lib, model, runtime.
 
 ### Element IDs (used by the runtime and the checker)

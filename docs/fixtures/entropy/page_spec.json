@@ -9,64 +9,119 @@
  "excerpt": "6. Choice, Uncertainty and Entropy. Suppose we have a set of possible events whose probabilities of occurrence are p_1, p_2, ..., p_n. These probabilities are known but that is all we know concerning which event will occur. Can we find a measure of how much \"choice\" is involved in the selection of the event, or of how uncertain we are of the outcome? If there is such a measure, say H(p_1, p_2, ..., p_n), it is reasonable to require of it the following properties: (1) H should be continuous in the p_i. (2) If all the p_i are equal, p_i = 1/n, then H should be a monotonic increasing function of n: with equally likely events there is more choice, or uncertainty, when there are more possible events. (3) If a choice be broken down into two successive choices, the original H should be the weighted sum of the individual values of H. Theorem 2: The only H satisfying the three above assumptions is of the form H = -K sum_{i=1}^{n} p_i log p_i, where K is a positive constant (it merely amounts to a choice of a unit of measure). Quantities of the form H = -sum p_i log p_i play a central role in information theory as measures of information, choice and uncertainty, and will be recognized as the entropy of statistical mechanics. With logarithms to the base 2, the unit is the bit. Properties of H: (1) H = 0 if and only if all the p_i but one are zero, this one having the value unity; thus only when we are certain of the outcome does H vanish, otherwise H is positive. (2) For a given n, H is a maximum and equal to log n when all the p_i are equal (i.e., 1/n); this is also intuitively the most uncertain situation. For two possibilities with probabilities p and q = 1 - p, H = -(p log p + q log q), which is plotted as a function of p in Fig. 7.",
  "spec": {
   "plan": {
-   "concept": "Discrete entropy H = -sum p_i log2 p_i as a measure of choice/uncertainty, with the special cases H=0 for certainty and H=log2 n for equally likely outcomes.",
-   "anchor": "Section 6, Theorem 2 and Properties (1)-(2); Fig. 7 for the two-outcome case",
-   "computation": "Normalize the entered weights into probabilities p_i, compute each contribution -p_i log2 p_i (with 0 log 0 = 0), sum to H, and also report log2 n, the maximum, and the gap H_max - H.",
-   "visual": "Left: a bar chart of the probabilities p_i. Right: a stacked/individual bar chart of the contributions -p_i log2 p_i with a horizontal reference line at H and a dashed line at log2 n.",
-   "controls": "n (number of outcomes), a weight vector of length n, a preset select (certain / uniform / skewed), and a toggle to show the contribution bars.",
-   "checks": "Probabilities sum to 1; every p_i in [0,1]; H >= 0; H = 0 iff one p_i = 1; H <= log2 n with equality iff all p_i = 1/n; contributions sum to H."
+   "concept": "Discrete entropy H = -sum p_i log2 p_i as a measure of choice/uncertainty, its properties (H=0 iff certain, H=log2 n when uniform), and correct handling of zero probabilities.",
+   "anchor": "Section 6, Theorem 2: H = -K sum_{i=1}^{n} p_i log p_i; with base-2 logs the unit is the bit.",
+   "computation": "From the probability vector p (normalized), compute each term -p_i log2 p_i (with the limit 0 when p_i=0), the total H, the maximum log2 n, the deficit log2 n - H, and the uniform reference value.",
+   "visual": "Left: bar chart of probabilities p_i with the uniform level 1/n marked. Right: stacked/individual contribution bars -p_i log2 p_i plus a total-entropy bar, with the log2 n ceiling line.",
+   "controls": "n (number of outcomes), a probability vector of length n (resized with n), a 'uniform' toggle that sets all p_i equal, and a select for a two-outcome p vs 1-p view.",
+   "checks": "Certainty gives 0 bits; four equally likely outcomes give 2 bits; H >= 0 always; H <= log2 n; zero probabilities contribute 0; uniform maximizes H.",
+   "coverage": [
+    {
+     "outcome": "Explain discrete entropy H = -sum p_i log2 p_i using a small distribution",
+     "where": [
+      "text",
+      "visual",
+      "value"
+     ]
+    },
+    {
+     "outcome": "Let the learner change the distribution",
+     "where": [
+      "control:p",
+      "exploration:1"
+     ]
+    },
+    {
+     "outcome": "Let the learner change the number of outcomes",
+     "where": [
+      "control:n",
+      "exploration:2"
+     ]
+    },
+    {
+     "outcome": "Show probabilities, individual contributions, and total entropy in bits",
+     "where": [
+      "visual",
+      "value"
+     ]
+    },
+    {
+     "outcome": "Compare a certain outcome with equally likely outcomes",
+     "where": [
+      "control:uniform",
+      "exploration:1",
+      "check"
+     ]
+    },
+    {
+     "outcome": "Check that certainty gives zero bits",
+     "where": [
+      "check"
+     ]
+    },
+    {
+     "outcome": "Check that four equally likely outcomes give two bits",
+     "where": [
+      "check"
+     ]
+    },
+    {
+     "outcome": "Handle zero probabilities correctly",
+     "where": [
+      "control:p",
+      "check",
+      "value"
+     ]
+    }
+   ]
   },
   "title": "Entropy: How Much Choice Is in a Distribution?",
-  "hook": "Shannon asked how much \"choice\" or uncertainty a set of probabilities contains. Build a small distribution and watch the entropy in bits rise toward $\\log_2 n$ as the outcomes become equally likely, and fall to zero when one outcome is certain.",
-  "idea": "Suppose you are about to observe one of $n$ events, and you know only the probabilities $p_1,\\dots,p_n$. Shannon asked for a number $H(p_1,\\dots,p_n)$ measuring how much choice is involved. He required three things: $H$ is continuous in the $p_i$; when all outcomes are equally likely $H$ increases with $n$; and splitting a choice into two successive choices makes $H$ the weighted sum of the parts.\n\nTheorem 2 says the only function satisfying these is $H = -K\\sum_i p_i \\log p_i$, with $K>0$ just fixing the unit. Taking base-2 logarithms makes the unit the **bit**.\n\nEach term $-p_i\\log_2 p_i$ is that outcome's own contribution. A very likely outcome contributes little (it is not surprising), and a very unlikely one also contributes little (it rarely happens) — the largest single contribution comes from an outcome with probability $1/e \\approx 0.368$. The total $H$ is the sum of these contributions.\n\nTwo special cases anchor the intuition. If one outcome has probability 1, every term is zero, so $H=0$: certainty means no choice. If all $n$ outcomes are equally likely, $p_i = 1/n$ and $H = -\\sum (1/n)\\log_2(1/n) = \\log_2 n$, the largest value possible for that $n$.",
-  "why": "Entropy is the currency of information theory: it sets the minimum average number of bits needed to describe the outcome of a random source, and it is the quantity that channel capacity and coding theorems are measured against. Getting comfortable with $H=-\\sum p_i\\log_2 p_i$ on a tiny distribution makes those later results readable.",
+  "hook": "Shannon asked how to measure the 'choice' in a set of probabilities. Move the probabilities and the number of outcomes, and watch the entropy in bits respond.",
+  "idea": "Suppose a random experiment has $n$ possible outcomes with probabilities $p_1,\\dots,p_n$ that sum to 1. Shannon wanted a number $H(p_1,\\dots,p_n)$ that measures how uncertain we are about the outcome. He required three things: $H$ is continuous in the $p_i$; if all outcomes are equally likely then $H$ increases with $n$; and splitting a choice into two stages makes $H$ the weighted sum of the parts.\n\nTheorem 2 says the only function satisfying these is $H = -K\\sum_i p_i \\log p_i$. Choosing base-2 logarithms and $K=1$ makes the unit the **bit**. Each term $-p_i\\log_2 p_i$ is that outcome's contribution: an outcome with tiny probability contributes little because it rarely happens, and an outcome with probability near 1 also contributes little because it is nearly certain.\n\nTwo properties follow directly. If one outcome has probability 1 and the rest are 0, every term is 0, so $H=0$: certainty means no uncertainty. If all $n$ outcomes are equally likely, $p_i=1/n$, then $H=\\log_2 n$, the largest possible value for that $n$.\n\nZero probabilities need care: $\\log_2 0$ is undefined, but $p\\log_2 p \\to 0$ as $p\\to 0^+$, so the convention is that a zero-probability outcome contributes exactly 0 to $H$.",
+  "why": "Entropy is the foundation of information theory, data compression, and channel capacity. Seeing it as a sum of per-outcome contributions makes clear why uniform distributions carry the most uncertainty and why certainty carries none.",
   "equations": [
    {
-    "tex": "H = -K \\sum_{i=1}^{n} p_i \\log p_i",
-    "caption": "Theorem 2: the unique measure of choice/uncertainty satisfying Shannon's three requirements; $K>0$ only chooses the unit."
+    "tex": "H = -K\\sum_{i=1}^{n} p_i \\log p_i",
+    "caption": "Theorem 2: the unique measure satisfying Shannon's three requirements; $K$ is a positive constant fixing the unit."
    },
    {
     "tex": "H = -\\sum_{i=1}^{n} p_i \\log_2 p_i",
-    "caption": "The same formula with base-2 logarithms, so that $H$ is measured in bits."
+    "caption": "With base-2 logarithms and $K=1$, the unit is the bit."
    },
    {
-    "tex": "H = 0 \\iff p_i = 1 \\text{ for exactly one } i",
-    "caption": "Property (1): entropy vanishes only when the outcome is certain."
+    "tex": "p_i = \\frac{1}{n} \\Rightarrow H = \\log_2 n",
+    "caption": "Property (2): for fixed $n$, $H$ is maximized and equals $\\log_2 n$ when all outcomes are equally likely."
    },
    {
-    "tex": "H \\le \\log_2 n, \\quad H = \\log_2 n \\iff p_i = 1/n \\ \\forall i",
-    "caption": "Property (2): for fixed $n$, entropy is maximized by the uniform distribution."
-   },
-   {
-    "tex": "H = -(p \\log_2 p + q \\log_2 q), \\quad q = 1-p",
-    "caption": "The two-outcome case plotted in Fig. 7; it peaks at $p=q=1/2$ with $H=1$ bit."
+    "tex": "p_i = 0 \\Rightarrow -p_i \\log_2 p_i = 0",
+    "caption": "Property (1): a zero-probability outcome contributes nothing; $H=0$ iff one outcome has probability 1."
    }
   ],
   "symbols": [
    {
     "symbol": "n",
-    "meaning": "number of possible events/outcomes",
-    "demo": "the $n$ control; also the length of the weight vector"
+    "meaning": "number of possible outcomes",
+    "demo": "the 'Number of outcomes' control"
    },
    {
     "symbol": "p_i",
-    "meaning": "probability of the $i$-th outcome, with $\\sum_i p_i = 1$",
-    "demo": "the normalized probabilities shown in the left bar chart and in the table"
+    "meaning": "probability of outcome $i$; the $p_i$ sum to 1",
+    "demo": "the probability vector sliders"
    },
    {
     "symbol": "H",
-    "meaning": "entropy: the measure of choice/uncertainty, in bits when the log is base 2",
-    "demo": "the total shown as a value label and as the reference line on the contribution chart"
+    "meaning": "entropy in bits, the total uncertainty",
+    "demo": "the 'Total entropy H' value and the total bar"
    },
    {
-    "symbol": "-p_i \\log_2 p_i",
-    "meaning": "the contribution of outcome $i$ to the total entropy",
-    "demo": "the right-hand bars, one per outcome"
+    "symbol": "-p_i\\log_2 p_i",
+    "meaning": "contribution of outcome $i$ to $H$",
+    "demo": "the contribution bars and the contribution table"
    },
    {
     "symbol": "\\log_2 n",
-    "meaning": "the maximum entropy for $n$ outcomes, attained when all $p_i = 1/n$",
-    "demo": "the dashed reference line and the $H_{\\max}$ value label"
+    "meaning": "maximum entropy for $n$ outcomes (uniform case)",
+    "demo": "the ceiling line and the 'Max H' value"
    }
   ],
   "controls": [
@@ -78,12 +133,12 @@
     "max": 6.0,
     "step": 1.0,
     "value": 4.0,
-    "help": "Resizes the weight vector; new entries start at 1."
+    "help": "How many possible events there are."
    },
    {
-    "id": "w",
+    "id": "p",
     "type": "vector",
-    "label": "Weights $w_i$ (normalized to $p_i$)",
+    "label": "Probabilities $p_i$",
     "length": "n",
     "min": 0.0,
     "max": 1.0,
@@ -95,183 +150,201 @@
      0.25
     ],
     "labels": [
-     "1",
-     "2",
-     "3",
-     "4",
-     "5",
-     "6"
+     "$p_1$",
+     "$p_2$",
+     "$p_3$",
+     "$p_4$",
+     "$p_5$",
+     "$p_6$"
     ],
-    "fill": 0.25,
-    "help": "Only the ratios matter: $p_i = w_i / \\sum_j w_j$."
+    "fill": 0
    },
    {
-    "id": "showContrib",
+    "id": "uniform",
     "type": "toggle",
-    "label": "Show contribution bars $-p_i\\log_2 p_i$",
-    "value": true
+    "label": "Force equally likely ($p_i = 1/n$)",
+    "value": false,
+    "help": "When on, all probabilities are set equal, the most uncertain case."
+   },
+   {
+    "id": "two",
+    "type": "select",
+    "label": "Two-outcome view ($p$ vs $1-p$)",
+    "options": [
+     {
+      "value": "off",
+      "label": "Off"
+     },
+     {
+      "value": "on",
+      "label": "Show H(p, 1-p)"
+     }
+    ],
+    "value": "off"
    }
   ],
-  "visual_caption": "Left panel: bars are the probabilities $p_i$ (blue), with a dashed line at $1/n$. Right panel: bars are the individual contributions $-p_i\\log_2 p_i$ (one color per outcome), the solid horizontal line marks the total $H$, and the dashed line marks $\\log_2 n$. The gap between the two lines is how far the distribution is from uniform. Bars of height zero mean that outcome contributes nothing.",
+  "visual_caption": "Left panel: bars are the probabilities $p_i$; the dashed line is the uniform level $1/n$. Right panel: bars are the individual contributions $-p_i\\log_2 p_i$ (same colors as the probabilities), the solid bar on the right is the total $H$, and the dashed line is the ceiling $\\log_2 n$. A contribution bar of zero height means that outcome adds no uncertainty.",
   "explorations": [
    {
-    "title": "Certainty gives zero bits",
+    "title": "Certainty versus equally likely",
     "preset": {
      "n": 4,
-     "w": [
+     "p": [
       1,
       0,
       0,
       0
      ],
-     "showContrib": true
+     "uniform": false,
+     "two": "off"
     },
-    "change": "Look at the distribution with one weight equal to 1 and the rest 0, then drag the other weights up a little and back to 0.",
-    "observe": "The $H$ value label reads 0.000 bits and every contribution bar has height 0; as soon as any other weight becomes positive, $H$ becomes positive.",
-    "why": "Every term is $-p_i\\log_2 p_i$ with $p_i$ either 0 or 1, and both give 0 (using $0\\log 0 = 0$). Property (1) of the excerpt: only when we are certain of the outcome does $H$ vanish."
+    "change": "Turn on 'Force equally likely', then turn it off and drag $p_1$ back toward 1.",
+    "observe": "With $p=(1,0,0,0)$ the total entropy reads 0 bits and all contribution bars vanish. With the toggle on, $p=(0.25,0.25,0.25,0.25)$ and the total reads 2 bits, matching $\\log_2 4$.",
+    "why": "A certain outcome has $p\\log_2 p = 0$ for every term, so $H=0$. Equal probabilities give each term $0.25\\times 2 = 0.5$, and four of them sum to 2."
    },
    {
-    "title": "Four equally likely outcomes give two bits",
+    "title": "More outcomes, more uncertainty",
     "preset": {
-     "n": 4,
-     "w": [
-      0.25,
-      0.25,
-      0.25,
-      0.25
+     "n": 2,
+     "p": [
+      0.5,
+      0.5
      ],
-     "showContrib": true
+     "uniform": true,
+     "two": "off"
     },
-    "change": "Set $n$ to 4 and make all four weights equal. Then change $n$ to 2, 3, 5, 6 and watch the $H$ label.",
-    "observe": "With $n=4$ equal weights the $H$ label reads 2.000 bits and the solid line sits exactly on the dashed $\\log_2 n$ line. Changing $n$ moves the dashed line to $\\log_2 n$ and $H$ follows it whenever the weights stay equal.",
-    "why": "For equal probabilities $p_i = 1/n$, so $H = -\\sum (1/n)\\log_2(1/n) = \\log_2 n$. With $n=4$ that is $\\log_2 4 = 2$ bits; this is the maximum for that $n$, Property (2)."
+    "change": "Increase $n$ from 2 to 6 with the uniform toggle on.",
+    "observe": "The total entropy rises from 1 bit at $n=2$ to about 2.585 bits at $n=6$, tracking $\\log_2 n$; the ceiling line moves up too.",
+    "why": "Property (2): with equally likely events, $H=\\log_2 n$ is monotonic increasing in $n$, so more possible events means more choice."
    }
   ],
   "pitfall": {
    "kind": "misconception",
-   "title": "Entropy is not the number of outcomes",
-   "text": "A distribution over 6 outcomes can have less entropy than one over 2 outcomes: set $n=6$ with weights $[1,0,0,0,0,0]$ and $H=0$, while $n=2$ with weights $[1,1]$ gives $H=1$ bit. Entropy depends on the whole distribution, not on $n$ alone; $n$ only sets the ceiling $\\log_2 n$."
+   "title": "Zero probability is not an error",
+   "text": "A zero-probability outcome makes $\\log_2 0$ undefined, but the limit $p\\log_2 p \\to 0$ as $p\\to 0^+$ means its contribution is exactly 0. The page applies this convention, so setting a slider to 0 never produces NaN or Infinity."
   },
   "grounding": {
    "paper": "A Mathematical Theory of Communication (C. E. Shannon, 1948)",
-   "section": "Section 6, Choice, Uncertainty and Entropy; Theorem 2 and Properties (1)-(2); Fig. 7",
+   "section": "Section 6, Choice, Uncertainty and Entropy; Theorem 2 and the properties of H",
    "from_source": [
-    "Shannon considers a set of possible events with known probabilities $p_1,\\dots,p_n$ and asks for a measure $H(p_1,\\dots,p_n)$ of how much choice or uncertainty is involved.",
-    "He requires: (1) $H$ continuous in the $p_i$; (2) $H$ monotonic increasing in $n$ when all $p_i = 1/n$; (3) breaking a choice into two successive choices makes the original $H$ the weighted sum of the individual values.",
-    "Theorem 2: the only $H$ satisfying these is $H = -K\\sum_{i=1}^n p_i \\log p_i$ with $K>0$, where $K$ merely chooses the unit.",
+    "Shannon requires H to be continuous in the p_i, monotonic increasing in n when all p_i are equal, and additive when a choice is broken into successive choices.",
+    "Theorem 2: the only H satisfying these is H = -K sum p_i log p_i, with K a positive constant fixing the unit.",
     "With logarithms to base 2 the unit is the bit.",
-    "Property (1): $H=0$ if and only if all $p_i$ but one are zero, that one being 1; only when certain of the outcome does $H$ vanish, otherwise $H$ is positive.",
-    "Property (2): for a given $n$, $H$ is maximum and equal to $\\log n$ when all $p_i$ are equal to $1/n$.",
-    "For two possibilities with probabilities $p$ and $q=1-p$, $H = -(p\\log p + q\\log q)$, plotted against $p$ in Fig. 7."
+    "Property (1): H = 0 if and only if all p_i but one are zero, that one having value unity.",
+    "Property (2): for a given n, H is maximum and equal to log n when all p_i are equal to 1/n.",
+    "For two possibilities with probabilities p and q = 1-p, H = -(p log p + q log q)."
    ],
    "our_additions": [
-    "The interactive weight-vector normalization $p_i = w_i/\\sum_j w_j$ is our device for letting the learner edit a distribution while keeping it valid.",
-    "The claim that the largest single contribution $-p_i\\log_2 p_i$ occurs at $p_i = 1/e$ is our own calculus remark, not from the excerpt.",
-    "The preset names (equally likely, certain outcome, skewed) and the specific toy weights are ours.",
-    "The stacked-bar visual layout, the color coding, and the $H_{\\max}-H$ gap readout are our presentation choices."
+    "The interactive sliders, the bar/contribution visual, and the two-outcome curve are our teaching aids, not figures from the paper.",
+    "The convention that a zero-probability term contributes 0 is the standard limit of p log p as p -> 0.",
+    "The 'uniform' toggle and the two-outcome select are convenience controls we added."
    ],
-   "disclaimer": "This page is a small interactive illustration of the entropy formula from Section 6. It does not reproduce any experiment, table or figure from Shannon's paper; all displayed numbers come from the current control settings."
+   "disclaimer": "This is a toy illustration of the entropy formula on small hand-set distributions. It does not reproduce any experiment or numerical result from Shannon's paper."
   },
   "tests": [
    {
-    "name": "Certain outcome gives zero entropy",
+    "name": "Certain outcome gives 0 bits",
     "state": {
      "n": 4,
-     "w": [
+     "p": [
       1,
       0,
       0,
       0
      ],
-     "showContrib": true
+     "uniform": false,
+     "two": "off"
     },
     "expect": [
      {
       "path": "H",
       "value": 0,
       "tol": 1e-09
-     },
-     {
-      "path": "Hmax",
-      "value": 2,
-      "tol": 1e-09
-     },
-     {
-      "path": "p.0",
-      "value": 1,
-      "tol": 1e-09
-     },
-     {
-      "path": "p.1",
-      "value": 0,
-      "tol": 1e-09
      }
     ]
    },
    {
-    "name": "Four equally likely outcomes give two bits",
+    "name": "Four equally likely outcomes give 2 bits",
     "state": {
      "n": 4,
-     "w": [
+     "p": [
       0.25,
       0.25,
       0.25,
       0.25
      ],
-     "showContrib": true
+     "uniform": false,
+     "two": "off"
     },
     "expect": [
      {
       "path": "H",
       "value": 2,
-      "tol": 1e-09
-     },
-     {
-      "path": "Hmax",
-      "value": 2,
-      "tol": 1e-09
-     },
-     {
-      "path": "gap",
-      "value": 0,
-      "tol": 1e-09
-     },
-     {
-      "path": "p.0",
-      "value": 0.25,
-      "tol": 1e-09
-     }
-    ]
-   },
-   {
-    "name": "Two equally likely outcomes give one bit",
-    "state": {
-     "n": 2,
-     "w": [
-      1,
-      1
-     ],
-     "showContrib": true
-    },
-    "expect": [
-     {
-      "path": "H",
-      "value": 1,
-      "tol": 1e-09
-     },
-     {
-      "path": "Hmax",
-      "value": 1,
-      "tol": 1e-09
-     },
-     {
-      "path": "contrib.0",
-      "value": 0.5,
       "tol": 1e-09
      }
     ]
    }
-  ]
+  ],
+  "coverage": [
+   {
+    "outcome": "Explain discrete entropy H = -sum p_i log2 p_i using a small distribution",
+    "where": [
+     "text",
+     "visual",
+     "value"
+    ]
+   },
+   {
+    "outcome": "Let the learner change the distribution",
+    "where": [
+     "control:p",
+     "exploration:1"
+    ]
+   },
+   {
+    "outcome": "Let the learner change the number of outcomes",
+    "where": [
+     "control:n",
+     "exploration:2"
+    ]
+   },
+   {
+    "outcome": "Show probabilities, individual contributions, and total entropy in bits",
+    "where": [
+     "visual",
+     "value"
+    ]
+   },
+   {
+    "outcome": "Compare a certain outcome with equally likely outcomes",
+    "where": [
+     "control:uniform",
+     "exploration:1",
+     "check"
+    ]
+   },
+   {
+    "outcome": "Check that certainty gives zero bits",
+    "where": [
+     "check"
+    ]
+   },
+   {
+    "outcome": "Check that four equally likely outcomes give two bits",
+    "where": [
+     "check"
+    ]
+   },
+   {
+    "outcome": "Handle zero probabilities correctly",
+    "where": [
+     "control:p",
+     "check",
+     "value"
+    ]
+   }
+  ],
+  "coverage_warnings": []
  },
- "code": "function compute(s) {\n  var n = Math.max(1, Math.min(6, Math.round(s.n)));\n  var w = (s.w || []).slice(0, n);\n  while (w.length < n) w.push(0);\n  w = w.map(function (x) { return (typeof x === \"number\" && isFinite(x) && x > 0) ? x : 0; });\n\n  var total = L.sum(w);\n  var p = w.map(function (x) { return total > 0 ? x / total : 1 / n; });\n  var contrib = p.map(function (pi) {\n    if (pi <= 0) return 0;\n    return -pi * L.log2(pi);\n  });\n  var H = L.sum(contrib);\n  var Hmax = L.log2(n);\n  var gap = Hmax - H;\n  var maxContribIdx = L.argmax(contrib);\n  return {\n    n: n,\n    w: w,\n    p: p,\n    contrib: contrib,\n    H: H,\n    Hmax: Hmax,\n    gap: gap,\n    uniform: 1 / n,\n    maxContribIdx: maxContribIdx,\n    maxContrib: contrib[maxContribIdx],\n    sumP: L.sum(p),\n    sumContrib: L.sum(contrib)\n  };\n}\n\nfunction render(s, r) {\n  var W = 760, Hh = 340;\n  var body = \"\";\n  var padL = 56, padR = 20, padT = 46, padB = 54;\n  var gapX = 34;\n  var panelW = (W - padL - padR - gapX) / 2;\n  var panelH = Hh - padT - padB;\n  var leftX = padL, rightX = padL + panelW + gapX;\n  var topY = padT;\n\n  body += L.text(W / 2, 22, \"Probabilities p_i  \\u2192  contributions -p_i log2 p_i  \\u2192  total H\", { size: 15, anchor: \"middle\", weight: \"bold\" });\n\n  // ---- left panel: probabilities ----\n  var n = r.n;\n  var barW = panelW / n;\n  var maxP = Math.max(1, L.max(r.p));\n  var pScale = L.scale(0, maxP, topY + panelH, topY);\n  body += L.text(leftX + panelW / 2, topY - 12, \"Probabilities p_i\", { size: 13, anchor: \"middle\", weight: \"bold\" });\n  body += L.line(leftX, topY + panelH, leftX + panelW, topY + panelH, { color: \"#333\", width: 1.5 });\n  body += L.line(leftX, topY, leftX, topY + panelH, { color: \"#333\", width: 1.5 });\n  body += L.text(leftX - 8, topY, \"1\", { size: 12, anchor: \"end\", baseline: \"middle\" });\n  body += L.text(leftX - 8, topY + panelH, \"0\", { size: 12, anchor: \"end\", baseline: \"middle\" });\n  var yUni = pScale(r.uniform);\n  body += L.line(leftX, yUni, leftX + panelW, yUni, { color: \"#888\", width: 1.2, dash: \"5 4\" });\n  body += L.text(leftX + panelW - 2, yUni - 6, \"1/n = \" + L.fmt(r.uniform, 3), { size: 12, anchor: \"end\", color: \"#666\" });\n  for (var i = 0; i < n; i++) {\n    var bx = leftX + i * barW + barW * 0.15;\n    var bw = barW * 0.7;\n    var y0 = pScale(r.p[i]);\n    var bh = (topY + panelH) - y0;\n    if (bh < 0) bh = 0;\n    body += L.rect(bx, y0, bw, bh, { fill: L.color(i), stroke: \"#333\", rx: 2, opacity: 0.85 });\n    body += L.text(bx + bw / 2, topY + panelH + 16, \"p\" + (i + 1), { size: 12, anchor: \"middle\" });\n    body += L.text(bx + bw / 2, y0 - 6, L.fmt(r.p[i], 3), { size: 12, anchor: \"middle\" });\n  }\n\n  // ---- right panel: contributions ----\n  var maxC = Math.max(0.001, L.max(r.contrib), r.Hmax);\n  var cScale = L.scale(0, maxC, topY + panelH, topY);\n  body += L.text(rightX + panelW / 2, topY - 12, \"Contributions -p_i log2 p_i (bits)\", { size: 13, anchor: \"middle\", weight: \"bold\" });\n  body += L.line(rightX, topY + panelH, rightX + panelW, topY + panelH, { color: \"#333\", width: 1.5 });\n  body += L.line(rightX, topY, rightX, topY + panelH, { color: \"#333\", width: 1.5 });\n  body += L.text(rightX - 8, topY, L.fmt(maxC, 2), { size: 12, anchor: \"end\", baseline: \"middle\" });\n  body += L.text(rightX - 8, topY + panelH, \"0\", { size: 12, anchor: \"end\", baseline: \"middle\" });\n  var yMax = cScale(r.Hmax);\n  body += L.line(rightX, yMax, rightX + panelW, yMax, { color: \"#c0392b\", width: 1.4, dash: \"6 4\" });\n  body += L.text(rightX + panelW - 2, yMax - 6, \"log2 n = \" + L.fmt(r.Hmax, 3), { size: 12, anchor: \"end\", color: \"#c0392b\" });\n  var yH = cScale(r.H);\n  body += L.line(rightX, yH, rightX + panelW, yH, { color: \"#1a5276\", width: 2 });\n  body += L.text(rightX + 4, yH - 6, \"H = \" + L.fmt(r.H, 3) + \" bits\", { size: 12, anchor: \"start\", color: \"#1a5276\", weight: \"bold\" });\n  if (s.showContrib) {\n    var cbarW = panelW / n;\n    for (var j = 0; j < n; j++) {\n      var cx = rightX + j * cbarW + cbarW * 0.15;\n      var cw = cbarW * 0.7;\n      var cy0 = cScale(r.contrib[j]);\n      var ch = (topY + panelH) - cy0;\n      if (ch < 0) ch = 0;\n      body += L.rect(cx, cy0, cw, ch, { fill: L.color(j), stroke: \"#333\", rx: 2, opacity: 0.85 });\n      body += L.text(cx + cw / 2, topY + panelH + 16, \"p\" + (j + 1), { size: 12, anchor: \"middle\" });\n      if (r.contrib[j] > 0.0005) {\n        body += L.text(cx + cw / 2, cy0 - 6, L.fmt(r.contrib[j], 3), { size: 12, anchor: \"middle\" });\n      }\n    }\n  } else {\n    body += L.text(rightX + panelW / 2, topY + panelH / 2, \"contribution bars hidden\", { size: 13, anchor: \"middle\", color: \"#888\" });\n  }\n\n  body += L.text(W / 2, Hh - 12, \"H = \" + L.fmt(r.H, 3) + \" bits    Hmax = log2(\" + n + \") = \" + L.fmt(r.Hmax, 3) + \" bits    gap = \" + L.fmt(r.gap, 3) + \" bits\", { size: 13, anchor: \"middle\", weight: \"bold\" });\n\n  return L.svg(W, Hh, body);\n}\n\nfunction show(s, r) {\n  var rows = [];\n  rows.push({ label: \"n (number of outcomes)\", value: r.n, digits: 0, note: \"sets the ceiling log2 n\" });\n  rows.push({ label: \"sum of weights\", value: L.sum(r.w), digits: 3, note: \"normalizing constant\" });\n  rows.push({ label: \"p_i (normalized)\", value: r.p, digits: 3, colLabels: r.p.map(function (_, i) { return \"p\" + (i + 1); }), note: \"p_i = w_i / sum_j w_j\" });\n  rows.push({ label: \"sum p_i\", value: r.sumP, digits: 6, note: \"must equal 1\" });\n  rows.push({ label: \"-p_i log2 p_i\", value: r.contrib, digits: 3, colLabels: r.contrib.map(function (_, i) { return \"p\" + (i + 1); }), highlight: [r.maxContribIdx], note: \"largest single contribution highlighted\" });\n  rows.push({ label: \"H (entropy, bits)\", value: r.H, digits: 3, note: \"sum of the contributions\" });\n  rows.push({ label: \"Hmax = log2 n\", value: r.Hmax, digits: 3, note: \"attained only when all p_i = 1/n\" });\n  rows.push({ label: \"gap = Hmax - H\", value: r.gap, digits: 3, note: \"0 exactly when the distribution is uniform\" });\n  return rows;\n}\n\nfunction checks(s, r) {\n  var out = [];\n  var tol = 1e-9;\n\n  out.push({\n    name: \"Probabilities sum to 1\",\n    pass: Math.abs(r.sumP - 1) < 1e-9,\n    detail: \"sum p_i = \" + L.fmt(r.sumP, 6)\n  });\n\n  var inRange = r.p.every(function (pi) { return pi >= -tol && pi <= 1 + tol; });\n  out.push({\n    name: \"Every p_i lies in [0, 1]\",\n    pass: inRange,\n    detail: \"min p_i = \" + L.fmt(L.min(r.p), 6) + \", max p_i = \" + L.fmt(L.max(r.p), 6)\n  });\n\n  out.push({\n    name: \"H is non-negative\",\n    pass: r.H >= -tol,\n    detail: \"H = \" + L.fmt(r.H, 6) + \" bits\"\n  });\n\n  var zeroCase = r.p.every(function (pi) { return pi <= tol || Math.abs(pi - 1) < tol; });\n  var hIsZero = Math.abs(r.H) < 1e-9;\n  out.push({\n    name: \"H = 0 exactly when one outcome is certain\",\n    pass: (zeroCase === hIsZero),\n    detail: \"certain = \" + zeroCase + \", H = \" + L.fmt(r.H, 6)\n  });\n\n  var uniform = r.p.every(function (pi) { return Math.abs(pi - r.uniform) < 1e-9; });\n  var atMax = Math.abs(r.H - r.Hmax) < 1e-9;\n  out.push({\n    name: \"H = log2 n exactly when all p_i = 1/n\",\n    pass: (uniform === atMax),\n    detail: \"uniform = \" + uniform + \", H = \" + L.fmt(r.H, 6) + \", log2 n = \" + L.fmt(r.Hmax, 6)\n  });\n\n  out.push({\n    name: \"H never exceeds log2 n\",\n    pass: r.H <= r.Hmax + 1e-9,\n    detail: \"H = \" + L.fmt(r.H, 6) + \" <= \" + L.fmt(r.Hmax, 6)\n  });\n\n  out.push({\n    name: \"Contributions sum to H\",\n    pass: Math.abs(r.sumContrib - r.H) < 1e-9,\n    detail: \"sum contributions = \" + L.fmt(r.sumContrib, 6) + \", H = \" + L.fmt(r.H, 6)\n  });\n\n  var noNaN = r.p.every(function (pi) { return isFinite(pi); }) &&\n    r.contrib.every(function (c) { return isFinite(c); }) &&\n    isFinite(r.H) && isFinite(r.Hmax);\n  out.push({\n    name: \"No NaN or Infinity in any computed value\",\n    pass: noNaN,\n    detail: \"all p_i, contributions, H and log2 n are finite\"\n  });\n\n  return out;\n}"
+ "code": "function compute(s) {\n  var n = Math.max(1, Math.min(6, Math.round(s.n)));\n  var raw = (s.p || []).slice(0, n);\n  while (raw.length < n) raw.push(0);\n  raw = raw.map(function (v) { return Math.max(0, Number(v) || 0); });\n  var sum = PG.sum(raw);\n  var p;\n  if (sum <= 0) {\n    p = raw.map(function () { return 1 / n; });\n  } else {\n    p = raw.map(function (v) { return v / sum; });\n  }\n  if (s.uniform) {\n    p = p.map(function () { return 1 / n; });\n  }\n  var terms = p.map(function (pi) {\n    if (pi <= 0) return 0;\n    return -pi * PG.log2(pi);\n  });\n  var H = PG.sum(terms);\n  var maxH = PG.log2(n);\n  var uniformP = 1 / n;\n  var twoP = p.length > 0 ? p[0] : 0;\n  var twoH = 0;\n  if (twoP > 0) twoH += -twoP * PG.log2(twoP);\n  var q = 1 - twoP;\n  if (q > 0) twoH += -q * PG.log2(q);\n  var twoOn = s.two === \"on\";\n  return {\n    n: n,\n    p: p,\n    terms: terms,\n    H: H,\n    maxH: maxH,\n    deficit: maxH - H,\n    uniformP: uniformP,\n    twoP: twoP,\n    twoH: twoH,\n    twoOn: twoOn ? 1 : 0,\n    sum: PG.sum(p)\n  };\n}\n\nfunction render(s, r) {\n  var w = 760, h = 420;\n  var body = \"\";\n  var n = r.n;\n  var colors = [];\n  for (var i = 0; i < n; i++) colors.push(PG.color(i));\n\n  // Left panel: probabilities\n  var lx = 40, ly = 60, lw = 320, lh = 280;\n  body += PG.text(lx, ly - 24, \"Probabilities $p_i$\", { size: 15, weight: \"bold\" });\n  var pVals = r.p;\n  var pLabels = [];\n  for (var j = 0; j < n; j++) pLabels.push(\"$p_{\" + (j + 1) + \"}$\");\n  body += PG.bars({\n    x: lx, y: ly, w: lw, h: lh,\n    values: pVals, labels: pLabels,\n    title: \"\", yLabel: \"probability\",\n    min: 0, max: 1,\n    colors: colors,\n    fmt: function (v) { return PG.fmt(v, 2); },\n    refLines: [{ value: r.uniformP, label: \"1/n = \" + PG.fmt(r.uniformP, 2) }]\n  });\n\n  // Right panel: contributions\n  var rx = 420, ry = 60, rw = 300, rh = 280;\n  body += PG.text(rx, ry - 24, \"Contributions $-p_i\\\\log_2 p_i$\", { size: 15, weight: \"bold\" });\n  var cVals = r.terms;\n  var cLabels = [];\n  for (var k = 0; k < n; k++) cLabels.push(\"$c_{\" + (k + 1) + \"}$\");\n  var cMax = Math.max(0.5, r.maxH);\n  body += PG.bars({\n    x: rx, y: ry, w: rw, h: rh,\n    values: cVals, labels: cLabels,\n    title: \"\", yLabel: \"bits\",\n    min: 0, max: cMax,\n    colors: colors,\n    fmt: function (v) { return PG.fmt(v, 3); },\n    refLines: [{ value: r.maxH, label: \"log2 n = \" + PG.fmt(r.maxH, 2) }]\n  });\n\n  // Total entropy bar\n  var tx = 40, ty = 370, tw = 680, th = 22;\n  body += PG.text(tx, ty - 8, \"Total entropy H = \" + PG.fmt(r.H, 3) + \" bits\", { size: 14, weight: \"bold\" });\n  var frac = r.maxH > 0 ? PG.clamp(r.H / r.maxH, 0, 1) : 0;\n  body += PG.rect(tx, ty, tw, th, { fill: \"#e8e8e8\", stroke: \"#999\", rx: 4 });\n  body += PG.rect(tx, ty, tw * frac, th, { fill: PG.color(0), rx: 4 });\n  body += PG.text(tx + tw + 6, ty + th / 2, PG.fmt(r.H, 3), { size: 13, anchor: \"start\", baseline: \"middle\" });\n\n  // Two-outcome overlay when enabled\n  if (r.twoOn) {\n    var ox = 40, oy = 300, ow = 680, oh = 60;\n    body += PG.text(ox, oy - 6, \"Two-outcome view: H(p, 1-p) with p = \" + PG.fmt(r.twoP, 3) + \" -> \" + PG.fmt(r.twoH, 3) + \" bits\", { size: 13, weight: \"bold\" });\n    var pts = [];\n    for (var t = 0; t <= 40; t++) {\n      var pp = t / 40;\n      var hh = 0;\n      if (pp > 0) hh += -pp * PG.log2(pp);\n      if (1 - pp > 0) hh += -(1 - pp) * PG.log2(1 - pp);\n      pts.push([ox + pp * ow, oy + oh - (hh / 1) * oh]);\n    }\n    body += PG.plot({\n      x: ox, y: oy, w: ow, h: oh,\n      series: [{ points: pts, label: \"H(p,1-p)\", color: PG.color(2) }],\n      xDomain: [0, 1], yDomain: [0, 1],\n      xLabel: \"p\", yLabel: \"bits\",\n      markers: [{ x: r.twoP, y: r.twoH, label: \"current\", color: PG.color(0) }]\n    });\n  }\n\n  return PG.svg(w, h, body);\n}\n\nfunction show(s, r) {\n  var rows = [];\n  rows.push({ label: \"Number of outcomes $n$\", value: r.n, digits: 0 });\n  rows.push({ label: \"Probabilities $p_i$\", value: r.p, digits: 3, colLabels: r.p.map(function (_, i) { return \"$p_{\" + (i + 1) + \"}$\"; }) });\n  rows.push({ label: \"Contributions $-p_i\\\\log_2 p_i$\", value: r.terms, digits: 4, colLabels: r.terms.map(function (_, i) { return \"$c_{\" + (i + 1) + \"}$\"; }) });\n  rows.push({ label: \"Total entropy $H$ (bits)\", value: r.H, digits: 4, highlight: true });\n  rows.push({ label: \"Maximum $\\\\log_2 n$ (bits)\", value: r.maxH, digits: 4 });\n  rows.push({ label: \"Deficit $\\\\log_2 n - H$\", value: r.deficit, digits: 4 });\n  rows.push({ label: \"Two-outcome $H(p, 1-p)$ (bits)\", value: r.twoH, digits: 4 });\n  rows.push({ label: \"Two-outcome view active\", value: r.twoOn ? \"on\" : \"off\" });\n  return rows;\n}\n\nfunction checks(s, r) {\n  var out = [];\n  var n = r.n;\n\n  // Certainty gives zero bits\n  var certain = { n: n, p: [], uniform: false, two: \"off\" };\n  for (var i = 0; i < n; i++) certain.p.push(i === 0 ? 1 : 0);\n  var rc = compute(certain);\n  out.push({\n    name: \"Certainty gives 0 bits\",\n    pass: Math.abs(rc.H) < 1e-9,\n    detail: \"With p = (1,0,...,0), H = \" + PG.fmt(rc.H, 6) + \" bits.\"\n  });\n\n  // Four equally likely outcomes give 2 bits\n  var four = { n: 4, p: [0.25, 0.25, 0.25, 0.25], uniform: false, two: \"off\" };\n  var r4 = compute(four);\n  out.push({\n    name: \"Four equally likely outcomes give 2 bits\",\n    pass: Math.abs(r4.H - 2) < 1e-9,\n    detail: \"With p = (0.25,0.25,0.25,0.25), H = \" + PG.fmt(r4.H, 6) + \" bits.\"\n  });\n\n  // H >= 0\n  out.push({\n    name: \"H is nonnegative\",\n    pass: r.H >= -1e-9,\n    detail: \"H = \" + PG.fmt(r.H, 6) + \" bits.\"\n  });\n\n  // H <= log2 n\n  out.push({\n    name: \"H never exceeds log2 n\",\n    pass: r.H <= r.maxH + 1e-9,\n    detail: \"H = \" + PG.fmt(r.H, 6) + \" <= log2 n = \" + PG.fmt(r.maxH, 6) + \".\"\n  });\n\n  // Zero probabilities contribute zero\n  var zeroOk = true;\n  for (var k = 0; k < r.p.length; k++) {\n    if (r.p[k] === 0 && Math.abs(r.terms[k]) > 1e-12) zeroOk = false;\n  }\n  out.push({\n    name: \"Zero probabilities contribute 0\",\n    pass: zeroOk,\n    detail: \"Every p_i = 0 has contribution -p_i log2 p_i = 0.\"\n  });\n\n  // Uniform maximizes H\n  var uni = { n: n, p: [], uniform: true, two: \"off\" };\n  for (var m = 0; m < n; m++) uni.p.push(1 / n);\n  var ru = compute(uni);\n  out.push({\n    name: \"Uniform distribution maximizes H\",\n    pass: ru.H >= r.H - 1e-9 && Math.abs(ru.H - r.maxH) < 1e-9,\n    detail: \"Uniform H = \" + PG.fmt(ru.H, 6) + \" >= current H = \" + PG.fmt(r.H, 6) + \".\"\n  });\n\n  // Two-outcome view consistency\n  var twoOn = compute({ n: n, p: r.p, uniform: s.uniform, two: \"on\" });\n  var twoOff = compute({ n: n, p: r.p, uniform: s.uniform, two: \"off\" });\n  out.push({\n    name: \"Two-outcome toggle changes the view\",\n    pass: twoOn.twoOn !== twoOff.twoOn,\n    detail: \"twoOn flag = \" + twoOn.twoOn + \" vs \" + twoOff.twoOn + \".\"\n  });\n\n  return out;\n}"
 }

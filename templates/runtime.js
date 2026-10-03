@@ -28,12 +28,12 @@
     if (html != null) e.innerHTML = html;
     return e;
   }
-  function esc(s) { return L.esc(s == null ? '' : s); }
+  function esc(s) { return PG.esc(PG.plain(s == null ? '' : s)); }  /* $TeX$ in model strings -> Unicode */
   function decimalsOf(step) {
     var s = String(step == null ? 1 : step);
     return s.indexOf('.') >= 0 ? s.split('.')[1].length : 0;
   }
-  function fmtControl(c, v) { return L.fmt(Number(v), Math.max(decimalsOf(c.step), 0)); }
+  function fmtControl(c, v) { return PG.fmt(Number(v), Math.max(decimalsOf(c.step), 0)); }
 
   // ------------------------------------------------------------ dimensions
   function dimValue(d, fallback) {
@@ -66,7 +66,7 @@
 
   function defaults() {
     var s = {};
-    CONTROLS.forEach(function (c) { s[c.id] = L.copy(c.value); });
+    CONTROLS.forEach(function (c) { s[c.id] = PG.copy(c.value); });
     return s;
   }
   function labelOf(c) { return c.labelHtml || esc(c.label || c.id); }
@@ -197,7 +197,7 @@
         rowv.forEach(function (x, j) {
           var td = el('td');
           var n = numberInput(c, x, function (val) {
-            var M = L.copy(state[c.id]); M[i][j] = val; setValue(c, M);
+            var M = PG.copy(state[c.id]); M[i][j] = val; setValue(c, M);
           }, (c.label || c.id) + ' [' + (i + 1) + ',' + (j + 1) + ']');
           n.setAttribute('aria-label', (c.label || c.id) + ' row ' + (i + 1) + ' column ' + (j + 1));
           td.appendChild(n);
@@ -232,7 +232,7 @@
   }
 
   // -------------------------------------------------------------- outputs
-  function cellText(x, digits) { return typeof x === 'number' ? L.fmt(x, digits) : esc(x); }
+  function cellText(x, digits) { return typeof x === 'number' ? PG.fmt(x, digits) : esc(x); }
   function valueHtml(it) {
     var v = it.value, d = it.digits != null ? it.digits : 3;
     if (Array.isArray(v) && v.length && Array.isArray(v[0])) {
@@ -262,15 +262,15 @@
     if (errBox) { errBox.innerHTML = ''; errBox.hidden = true; }
     if (!MODEL.compute) { showError('Setup', 'interactive code did not load'); return; }
     var result;
-    try { result = MODEL.compute(L.copy(state)); } catch (e) { showError('compute', e); return; }
+    try { result = MODEL.compute(PG.copy(state)); } catch (e) { showError('compute', e); return; }
     try {
       var vis = $('p2p-visual');
-      if (vis && MODEL.render) vis.innerHTML = MODEL.render(L.copy(state), result);
+      if (vis && MODEL.render) vis.innerHTML = MODEL.render(PG.copy(state), result);
     } catch (e) { showError('render', e); }
     try {
       var vals = $('p2p-values');
       if (vals && MODEL.show) {
-        var items = MODEL.show(L.copy(state), result) || [];
+        var items = MODEL.show(PG.copy(state), result) || [];
         vals.innerHTML = items.map(function (it) {
           return '<div class="p2p-value' + (it.highlight ? ' p2p-value-hl' : '') + '"><div class="p2p-value-label">' + esc(it.label) + '</div>' +
             '<div class="p2p-value-body">' + valueHtml(it) + '</div>' + (it.note ? '<div class="p2p-value-note">' + esc(it.note) + '</div>' : '') + '</div>';
@@ -280,7 +280,7 @@
     try {
       var chk = $('p2p-checks');
       if (chk && MODEL.checks) {
-        var cs = MODEL.checks(L.copy(state), result) || [];
+        var cs = MODEL.checks(PG.copy(state), result) || [];
         chk.innerHTML = cs.map(function (c) {
           return '<li class="' + (c.pass ? 'p2p-pass' : 'p2p-fail') + '"><span class="p2p-mark" aria-hidden="true">' + (c.pass ? '✓' : '✗') + '</span> ' +
             '<span class="p2p-check-name">' + esc(c.name) + '</span>' + (c.detail != null && c.detail !== '' ? ' <span class="p2p-check-detail">' + esc(c.detail) + '</span>' : '') + '</li>';
@@ -294,7 +294,7 @@
     var ex = (SPEC.explorations || [])[i];
     if (!ex || !ex.preset) return;
     state = defaults();
-    Object.keys(ex.preset).forEach(function (k) { if (k in state) state[k] = L.copy(ex.preset[k]); });
+    Object.keys(ex.preset).forEach(function (k) { if (k in state) state[k] = PG.copy(ex.preset[k]); });
     conformAll();
     buildControls();
     update();
@@ -316,7 +316,7 @@
       document.querySelectorAll('.p2p-exploration').forEach(function (card) { card.classList.remove('p2p-active'); });
     });
     update();
-    window.P2P = { get state() { return L.copy(state); }, update: update, applyPreset: applyPreset };
+    window.P2P = { get state() { return PG.copy(state); }, update: update, applyPreset: applyPreset };
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

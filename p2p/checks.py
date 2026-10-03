@@ -21,6 +21,8 @@ FORBIDDEN_CODE = [
     (r"\bdocument\s*\.", "touches document; functions must be pure (the template owns the DOM)"),
     (r"\bMath\.random\s*\(", "uses Math.random(); results must be deterministic"),
     (r"https?://(?!www\.w3\.org/)", "contains a URL; the page must not load anything from the network"),
+    (r"\b(?:const|let|var)\s+PG\b|\bfunction\s+PG\b|[(,]\s*PG\s*[,)=]|(?<![.\w])PG\s*=[^=]",
+     "declares or reassigns a variable named PG, which hides the helper library PG: rename that variable"),
 ]
 
 
@@ -46,8 +48,12 @@ def static_code_problems(code: str) -> list[str]:
 def run_all(spec: dict, code: str, trace, final: bool = False) -> Report:
     stage = "final_check" if final else "check"
     report = Report()
-    _, spec_errors, _ = normalize_spec(dict(spec.get("_raw", spec)))
+    normalized, spec_errors, _ = normalize_spec(dict(spec.get("_raw", spec)))
     trace.log(stage, "spec_structure", "pass" if not spec_errors else "fail", problems=spec_errors)
+    warnings = normalized.get("coverage_warnings", [])
+    trace.log(stage, "brief_coverage", "pass" if not warnings else "warning",
+              outcomes=len(normalized.get("coverage", [])), coverage=normalized.get("coverage", []),
+              warnings=warnings)
     report.problems += spec_errors
 
     code_problems = static_code_problems(code)

@@ -100,6 +100,7 @@ def run(case: dict, model: str, api_key: str, out_dir: Path, trace, budget: Budg
               prompt_chars=sum(len(m["content"]) for m in messages))
 
     reply = client.chat(messages, GENERATION_MAX_TOKENS, stage="plan_generate", purpose="plan + spec + code")
+    _debug_save(out_dir, "reply_0.txt", reply.text)
     spec, code, reply_problems = _parse_reply(reply.text, trace, reply.finish_reason)
     if spec and spec.get("plan"):
         trace.log("plan_generate", "plan", "ok", plan=spec["plan"])
@@ -134,7 +135,8 @@ def run(case: dict, model: str, api_key: str, out_dir: Path, trace, budget: Budg
         previous = signature
         revisions += 1
         trace.log("revise", "request", "sent", revision=revisions, problems=problems)
-        snapshot = snapshot_text(spec, code, code_only_problems(problems)) if spec else last_text
+        snapshot = (snapshot_text(spec, code, code_only_problems(problems), prose_only_problems(problems))
+                    if spec else last_text)
         request = list(messages) + [{"role": "assistant", "content": snapshot},
                                     {"role": "user", "content": revision_prompt(problems, full=spec is None)}]
         try:
@@ -143,21 +145,20 @@ def run(case: dict, model: str, api_key: str, out_dir: Path, trace, budget: Budg
             trace.log("revise", "llm_call", "skipped", reason=str(exc))
             break
         last_text = fix.text
+        _debug_save(out_dir, f"reply_{revisions}.txt", fix.text)
         if spec is None:
             spec, code, reply_problems = _parse_reply(fix.text, trace, fix.finish_reason)
             continue
         reply_problems = []
         if fix.finish_reason == "length":
             reply_problems.append("your reply was cut off by the token limit: be more concise")
-        try:
-            raw_spec, code, changed = merge_revision(dict(spec.get("_raw", spec)), code, fix.text)
-        except ParseError as exc:
-            reply_problems.append(str(exc))
-            trace.log("revise", "apply", "error", revision=revisions, error=str(exc))
-            continue
+        raw_spec, code, changed, json_error = merge_revision(dict(spec.get("_raw", spec)), code, fix.text)
+        if json_error:
+            reply_problems.append(f"your spec patch could not be parsed ({json_error}); send valid JSON without comments")
         spec, errors, fixes = normalize_spec(raw_spec)
         spec["_raw"] = raw_spec
-        trace.log("revise", "apply", "ok", revision=revisions, changed=changed, auto_fixes=fixes)
+        trace.log("revise", "apply", "ok" if not json_error else "partial", revision=revisions, changed=changed,
+                  auto_fixes=fixes, json_error=json_error)
 
     if best is None:
         trace.log("build", "write_page", "failed", reason="no usable spec from the model", problems=problems)
@@ -185,14 +186,30 @@ def code_only_problems(problems: list[str]) -> bool:
     return all(p.startswith(prefixes) for p in problems)
 
 
-def snapshot_text(spec: dict, code: str, code_only: bool = False) -> str:
+def _debug_save(out_dir: Path, name: str, text: str) -> None:
+    """Development only (P2P_SAVE_SPEC=1): keep raw model replies for inspection."""
+    if os.environ.get("P2P_SAVE_SPEC"):
+        (out_dir / name).write_text(text, encoding="utf-8")
+
+
+PROSE_PREFIXES = ("spec.title", "spec.idea", "spec.why", "spec.equations", "spec.symbols", "spec.pitfall",
+                  "explorations[", "grounding.")
+
+
+def prose_only_problems(problems: list[str]) -> bool:
+    return all(p.startswith(PROSE_PREFIXES) for p in problems)
+
+
+def snapshot_text(spec: dict, code: str, code_only: bool = False, prose_only: bool = False) -> str:
     """Compact re-serialisation of the current version for a revision request.
 
-    When every problem concerns code/tests, the prose keys are left out to save
-    prompt tokens (the model only needs what the code depends on)."""
+    To save prompt tokens, code-only problems omit the prose keys and
+    prose-only problems omit the code (the model is told not to resend it)."""
     raw = spec.get("_raw", spec)
     if code_only:
         raw = {k: raw[k] for k in CODE_KEYS if k in raw}
+    if prose_only:
+        return "```json\n" + compact_json(raw) + "\n```\n(The javascript is unchanged and omitted here.)"
     return "```json\n" + compact_json(raw) + "\n```\n```javascript\n" + code.strip() + "\n```"
 
 

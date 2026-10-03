@@ -1,10 +1,10 @@
-/* Paper to Playground - generic helper library "L".
+/* Paper to Playground - generic helper library "PG".
  * Pure functions only (no DOM): math utilities, number formatting and SVG
  * string builders. Loaded into every generated page and into the V8 checker,
  * so generated compute()/render() code behaves identically in both places.
  * This file is generic: it contains no paper-specific content.
  */
-var L = (function () {
+var PG = (function () {
   'use strict';
   var L = {};
 
@@ -74,6 +74,44 @@ var L = (function () {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   };
 
+  /* Plain-text rendering of $TeX$ segments (SVG text and runtime labels
+   * cannot show MathML): Greek letters, accents, sub/superscripts, fractions. */
+  var SUB = { '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄', '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉', '+': '₊', '-': '₋', '=': '₌', '(': '₍', ')': '₎',
+    a: 'ₐ', e: 'ₑ', o: 'ₒ', x: 'ₓ', h: 'ₕ', k: 'ₖ', l: 'ₗ', m: 'ₘ', n: 'ₙ', p: 'ₚ', s: 'ₛ', t: 'ₜ', i: 'ᵢ', j: 'ⱼ', r: 'ᵣ', u: 'ᵤ', v: 'ᵥ' };
+  var SUP = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹', '+': '⁺', '-': '⁻', '=': '⁼', '(': '⁽', ')': '⁾',
+    n: 'ⁿ', i: 'ⁱ', T: 'ᵀ', t: 'ᵗ', k: 'ᵏ', '⊤': 'ᵀ' };
+  var SYM = { alpha: 'α', beta: 'β', gamma: 'γ', delta: 'δ', epsilon: 'ϵ', varepsilon: 'ε', zeta: 'ζ', eta: 'η', theta: 'θ', iota: 'ι', kappa: 'κ',
+    lambda: 'λ', mu: 'μ', nu: 'ν', xi: 'ξ', pi: 'π', rho: 'ρ', sigma: 'σ', tau: 'τ', phi: 'ϕ', varphi: 'φ', chi: 'χ', psi: 'ψ', omega: 'ω',
+    Gamma: 'Γ', Delta: 'Δ', Theta: 'Θ', Lambda: 'Λ', Xi: 'Ξ', Pi: 'Π', Sigma: 'Σ', Phi: 'Φ', Psi: 'Ψ', Omega: 'Ω', ell: 'ℓ',
+    cdot: '·', times: '×', div: '÷', pm: '±', le: '≤', leq: '≤', ge: '≥', geq: '≥', ne: '≠', neq: '≠', approx: '≈', equiv: '≡', sim: '∼',
+    propto: '∝', to: '→', rightarrow: '→', leftarrow: '←', infty: '∞', partial: '∂', nabla: '∇', sum: 'Σ', prod: 'Π', int: '∫', in: '∈',
+    top: '⊤', ldots: '…', cdots: '⋯', dots: '…', mid: '|', odot: '⊙', otimes: '⊗', circ: '∘', quad: ' ', qquad: '  ' };
+  function script(s, map, mark) {
+    var ch = Array.from(s);
+    if (ch.length && ch.every(function (c) { return map[c]; })) return ch.map(function (c) { return map[c]; }).join('');
+    return mark + (ch.length > 1 ? '(' + s + ')' : s);
+  }
+  function texToPlain(t) {
+    t = t.replace(/\\(?:mathrm|text|textrm|mathbf|mathit|boldsymbol|operatorname|mathsf)\{([^{}]*)\}/g, '$1');
+    t = t.replace(/\\left|\\right|\\big|\\Big|\\displaystyle/g, '');
+    t = t.replace(/\\([A-Za-z]+)/g, function (m, n) { return SYM[n] != null ? SYM[n] : m; });
+    t = t.replace(/\\(?:hat|widehat)\{(.)\}/g, '$1̂').replace(/\\(?:bar|overline)\{(.)\}/g, '$1̄')
+      .replace(/\\(?:tilde|widetilde)\{(.)\}/g, '$1̃').replace(/\\vec\{(.)\}/g, '$1⃗').replace(/\\dot\{(.)\}/g, '$1̇');
+    for (var pass = 0, prev = ''; pass < 4 && prev !== t; pass++) {  /* inner groups first, e.g. \frac{1}{\sqrt{d}} */
+      prev = t;
+      t = t.replace(/\\sqrt\{([^{}]*)\}/g, function (m, a) { return '√' + (a.length > 1 ? '(' + a + ')' : a); });
+      t = t.replace(/\\frac\{([^{}]*)\}\{([^{}]*)\}/g, function (m, a, b) { return (a.length > 1 ? '(' + a + ')' : a) + '/' + (b.length > 1 ? '(' + b + ')' : b); });
+    }
+    t = t.replace(/_\{([^{}]*)\}|_([^\s{}\\])/g, function (m, a, b) { return script(a != null ? a : b, SUB, '_'); });
+    t = t.replace(/\^\{([^{}]*)\}|\^([^\s{}\\])/g, function (m, a, b) { return script(a != null ? a : b, SUP, '^'); });
+    t = t.replace(/\\([,;:! ])/g, ' ').replace(/\\([A-Za-z]+)/g, '$1');
+    return t.replace(/[{}]/g, '').replace(/\\/g, '');
+  }
+  L.plain = function (s) {
+    s = String(s == null ? '' : s);
+    return s.indexOf('$') < 0 ? s : s.replace(/\$([^$]+)\$/g, function (m, t) { return texToPlain(t); });
+  };
+
   // ----------------------------------------------------------------- colors
   var PALETTE = ['#0072B2', '#E69F00', '#009E73', '#D55E00', '#CC79A7', '#56B4E9', '#8C6D1F', '#555555'];
   L.color = function (i) { return PALETTE[((i % PALETTE.length) + PALETTE.length) % PALETTE.length]; };
@@ -123,7 +161,7 @@ var L = (function () {
       x: num(x), y: num(y), 'font-size': o.size || 13, 'text-anchor': o.anchor || 'start',
       'dominant-baseline': o.baseline || null, fill: o.color || '#1f2933',
       'font-weight': o.weight || null, 'font-style': o.italic ? 'italic' : null, transform: tr, class: o.cls || null
-    }) + '>' + L.esc(str) + '</text>';
+    }) + '>' + L.esc(L.plain(str)) + '</text>';
   };
   L.line = function (x1, y1, x2, y2, o) {
     o = o || {};
