@@ -78,7 +78,7 @@ class NormalizeTest(unittest.TestCase):
 
     def test_missing_pieces_are_reported(self):
         _, errors, _ = normalize_spec(_spec(controls=[], explorations=[]))
-        self.assertTrue(any("2 valid controls" in e for e in errors))
+        self.assertTrue(any("2 valid input controls" in e for e in errors))
         self.assertTrue(any("2 guided explorations" in e for e in errors))
 
     def test_coverage_references_are_checked(self):
@@ -90,6 +90,18 @@ class NormalizeTest(unittest.TestCase):
         self.assertEqual(spec["coverage"][0]["where"], ["visual", "control:n"])  # near-miss id corrected
         spec, _, _ = normalize_spec(_spec(plan={}))
         self.assertTrue(any("empty" in w for w in spec["coverage_warnings"]))
+
+    def test_presets_control(self):
+        ctl = _spec()["controls"] + [{"id": "q", "type": "buttons", "options": [
+            {"label": "a", "set": {"n": 3, "zz": 1}}, {"label": "b", "set": {"zz": 2}}]}]
+        spec, errors, fixes = normalize_spec(_spec(controls=ctl))
+        self.assertEqual(errors, [])
+        q = spec["controls"][-1]
+        self.assertEqual(q["type"], "presets")
+        self.assertEqual(q["options"], [{"label": "a", "set": {"n": 3}}])  # unknown ids and empty buttons dropped
+        only_presets = [ctl[0], ctl[-1]]
+        _, errors, _ = normalize_spec(_spec(controls=only_presets))
+        self.assertTrue(any("presets buttons do not count" in e for e in errors))
 
     def test_bad_dimension_reference(self):
         bad = _spec()

@@ -37,7 +37,7 @@ Do not edit `templates/runtime.js` or anything in `p2p/` without telling the bac
 |---|---|
 | Equations | `.equations`, `.equation`, `.equation .caption`, `<math display="block">` |
 | Symbols table | `table.symbols`, `td.sym` |
-| Controls | `.p2p-control`, `.p2p-control-range`/`-number`/`-toggle`/`-select`/`-vector`/`-matrix`, `.p2p-control-head`, `.p2p-label`, `.p2p-readout`, `.p2p-range`, `.p2p-num`, `.p2p-num.p2p-invalid`, `.p2p-select`, `.p2p-toggle`, `.p2p-help`, `.p2p-vector`, `.p2p-vector-item`, `.p2p-vector-name`, `table.p2p-matrix-input` |
+| Controls | `.p2p-control`, `.p2p-control-range`/`-number`/`-toggle`/`-select`/`-vector`/`-matrix`/`-presets`, `.p2p-presets`, `button.p2p-preset-btn` (quick-setup buttons), `.p2p-control-head`, `.p2p-label`, `.p2p-readout`, `.p2p-range`, `.p2p-num`, `.p2p-num.p2p-invalid`, `.p2p-select`, `.p2p-toggle`, `.p2p-help`, `.p2p-vector`, `.p2p-vector-item`, `.p2p-vector-name`, `table.p2p-matrix-input` |
 | Visual | `#p2p-visual svg.p2p-svg`. The SVG has a fixed `viewBox` (up to 760 units wide) and scales to its container, so a wider container means larger, more readable text. |
 | Values | `.p2p-value`, `.p2p-value-hl`, `.p2p-value-label`, `.p2p-value-body`, `.p2p-value-note`, `.p2p-scalar`, `table.p2p-matrix` |
 | Live checks | `li.p2p-pass`, `li.p2p-fail`, `.p2p-mark`, `.p2p-check-name`, `.p2p-check-detail` |

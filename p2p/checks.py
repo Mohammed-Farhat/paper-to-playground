@@ -71,9 +71,10 @@ def run_all(spec: dict, code: str, trace, final: bool = False) -> Report:
                       states_tested=ex.states_tested, live_checks_evaluated=ex.checks_seen,
                       control_effects=ex.control_effects, critical=ex.critical, problems=ex.problems)
             if ex.tests:
-                passed = sum(1 for t in ex.tests if t["passed"])
-                trace.log(stage, "known_answer_tests", "pass" if passed == len(ex.tests) else "fail",
-                          passed=passed, total=len(ex.tests), tests=ex.tests)
+                passed = sum(1 for t in ex.tests if t["passed"] is True)
+                skipped = sum(1 for t in ex.tests if t["passed"] is None)
+                trace.log(stage, "known_answer_tests", "pass" if passed + skipped == len(ex.tests) else "fail",
+                          passed=passed, skipped=skipped, total=len(ex.tests), tests=ex.tests)
             report.problems += [p for p in ex.problems if p not in report.problems]
             report.critical = report.critical or ex.critical
     return report

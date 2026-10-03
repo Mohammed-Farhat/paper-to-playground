@@ -144,11 +144,11 @@ def conform(state: dict, controls: list[dict]) -> dict:
 
 
 def default_state(controls: list[dict]) -> dict:
-    return conform({c["id"]: copy.deepcopy(c["value"]) for c in controls}, controls)
+    return conform({c["id"]: copy.deepcopy(c["value"]) for c in controls if c["type"] != "presets"}, controls)
 
 
 def with_overrides(controls: list[dict], overrides: dict) -> dict:
-    state = {c["id"]: copy.deepcopy(c["value"]) for c in controls}
+    state = {c["id"]: copy.deepcopy(c["value"]) for c in controls if c["type"] != "presets"}
     ids = set(state)
     for k, v in (overrides or {}).items():
         if k in ids:
@@ -166,9 +166,19 @@ def _bounds(c: dict, values: list[float]) -> tuple[float, float]:
     return float(lo), float(hi)
 
 
+def apply_control(controls: list[dict], state: dict, c: dict, value) -> dict:
+    """State after setting control c to value (a presets button applies its whole set)."""
+    if c["type"] == "presets":
+        return with_overrides(controls, {**state, **value})
+    return with_overrides(controls, {**state, c["id"]: value})
+
+
 def control_variants(c: dict) -> list[tuple[str, Any]]:
     """Alternative values of one control: (description, value)."""
-    t, v = c["type"], c["value"]
+    t = c["type"]
+    if t == "presets":
+        return [(f"{c['id']} button '{o['label']}'", o["set"]) for o in c["options"]]
+    v = c["value"]
     out: list[tuple[str, Any]] = []
     if t in ("range", "number"):
         lo, hi = c.get("min"), c.get("max")
@@ -427,14 +437,14 @@ def execute(spec: dict, code: str) -> ExecReport:
     sweeps: dict[str, list[tuple[str, Any, dict]]] = {}
     for c in controls:
         for desc, value in control_variants(c):
-            sweeps.setdefault(c["id"], []).append((desc, value, evaluate(with_overrides(controls, {**base_state, c["id"]: value}), desc)))
+            sweeps.setdefault(c["id"], []).append((desc, value, evaluate(apply_control(controls, base_state, c, value), desc)))
     # Other controls' first variants are extra contexts: a control may only
     # matter once something else changes (e.g. a "force uniform" toggle when
     # the default distribution is already uniform).
     for c in controls:
         for desc, value, res in sweeps.get(c["id"], [])[:1]:
             if len(contexts) < 9:
-                contexts.append((desc, with_overrides(controls, {**base_state, c["id"]: value}), res))
+                contexts.append((desc, apply_control(controls, base_state, c, value), res))
 
     def signature(res: dict):
         return (res.get("result"), res.get("svg"))
@@ -450,7 +460,7 @@ def execute(spec: dict, code: str) -> ExecReport:
                 if ctx_desc == "default state":
                     res = next(r for d, v, r in sweeps[c["id"]] if d == desc)
                 else:
-                    res = evaluate(with_overrides(controls, {**ctx_state, c["id"]: value}), f"{ctx_desc} + {desc}")
+                    res = evaluate(apply_control(controls, ctx_state, c, value), f"{ctx_desc} + {desc}")
                 if not res.get("error") and signature(res) != signature(ctx_res):
                     changed = True
                     break
@@ -459,7 +469,8 @@ def execute(spec: dict, code: str) -> ExecReport:
         rep.control_effects[c["id"]] = changed
         if not changed:
             note(f"control '{c['id']}' has no effect in any tested state: changing it alters neither compute() results nor the SVG", "control sweep")
-    effective = sum(rep.control_effects.values())
+    effective = sum(v for k, v in rep.control_effects.items()
+                    if next(c for c in controls if c["id"] == k)["type"] != "presets")
     if controls and effective < 2:
         note(f"only {effective} control(s) change the output; at least 2 meaningful controls are required", "control sweep")
 
@@ -475,6 +486,13 @@ def execute(spec: dict, code: str) -> ExecReport:
                 continue
             got = eng.get_path(res["result"], str(exp["path"]))
             entry = {"name": name, "path": exp["path"], "expected": exp.get("value")}
+            if _has_rounded(exp.get("value")):
+                # The prompt allows only exact stated values; a long decimal is
+                # the model's own rounded arithmetic, so it cannot judge the code.
+                entry.update(passed=None, actual=got.get("value"),
+                             note="skipped: expectation is a rounded hand calculation, not an exact value")
+                rep.tests.append(entry)
+                continue
             if not got.get("found"):
                 entry.update(passed=False, actual=None)
                 failures.append(f"path '{exp['path']}' is not in the compute() result "
@@ -496,6 +514,16 @@ def execute(spec: dict, code: str) -> ExecReport:
 
     rep.problems += _format(issues)
     return rep
+
+
+def _has_rounded(value) -> bool:
+    if isinstance(value, bool):
+        return False
+    if isinstance(value, (int, float)):
+        return _is_rounded(float(value))
+    if isinstance(value, list):
+        return any(_has_rounded(v) for v in value)
+    return False
 
 
 def _is_rounded(x: float) -> bool:

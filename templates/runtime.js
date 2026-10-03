@@ -66,7 +66,7 @@
 
   function defaults() {
     var s = {};
-    CONTROLS.forEach(function (c) { s[c.id] = PG.copy(c.value); });
+    CONTROLS.forEach(function (c) { if (c.type !== 'presets') s[c.id] = PG.copy(c.value); });
     return s;
   }
   function labelOf(c) { return c.labelHtml || esc(c.label || c.id); }
@@ -207,6 +207,18 @@
       });
       box.appendChild(table);
     }
+    if (c.type === 'presets') {
+      /* Quick-setup buttons: each sets several other controls at once. */
+      box.appendChild(el('div', 'p2p-label', labelOf(c)));
+      var row = el('div', 'p2p-presets');
+      (c.options || []).forEach(function (o) {
+        var b = el('button', 'p2p-preset-btn', esc(o.label));
+        b.type = 'button';
+        b.addEventListener('click', function () { applySet(o.set); });
+        row.appendChild(b);
+      });
+      box.appendChild(row);
+    }
     if (c.help) box.appendChild(el('div', 'p2p-help', c.helpHtml || esc(c.help)));
     return box;
   }
@@ -216,6 +228,13 @@
     if (!host) return;
     host.innerHTML = '';
     CONTROLS.forEach(function (c) { host.appendChild(buildControl(c)); });
+  }
+
+  function applySet(set) {
+    Object.keys(set || {}).forEach(function (k) { if (k in state) state[k] = PG.copy(set[k]); });
+    conformAll();
+    buildControls();
+    update();
   }
 
   function setValue(c, v) {

@@ -26,7 +26,7 @@ _TEX_NAMES = set(GREEK) | set(SYMBOLS) | set(BIG_OPS) | set(FUNCTIONS) | set(ACC
         "color", "middle", "vert", "Vert",
     }
 
-CONTROL_TYPES = {"range", "number", "toggle", "select", "vector", "matrix"}
+CONTROL_TYPES = {"range", "number", "toggle", "select", "vector", "matrix", "presets"}
 _BLOCK_RE = re.compile(r"```[ \t]*([A-Za-z]*)[^\n]*\n(.*?)(?:\n[ \t]*```|\Z)", re.S)
 
 
@@ -184,6 +184,8 @@ def normalize_spec(spec: dict[str, Any]) -> tuple[dict[str, Any], list[str], lis
             ctype = "range"
         if ctype in ("checkbox", "boolean", "switch"):
             ctype = "toggle"
+        if ctype in ("buttons", "quick", "setups", "preset"):
+            ctype = "presets"
         if ctype not in CONTROL_TYPES:
             errors.append(f"control {cid!r} has unsupported type {ctype!r}")
             continue
@@ -194,15 +196,29 @@ def normalize_spec(spec: dict[str, Any]) -> tuple[dict[str, Any], list[str], lis
             errors.append(f"control {cid!r}: {problem}")
             continue
         controls.append(c)
+    ids = {c["id"] for c in controls if c["type"] != "presets"}  # controls that hold state
+    for c in [c for c in controls if c["type"] == "presets"]:
+        kept = []
+        for o in c["options"]:
+            unknown = [k for k in o["set"] if k not in ids]
+            if unknown:
+                fixes.append(f"control {c['id']!r}: dropped unknown ids {unknown} from button {o['label']!r}")
+            o = {"label": o["label"], "set": {k: v for k, v in o["set"].items() if k in ids}}
+            if o["set"]:
+                kept.append(o)
+        if kept:
+            c["options"] = kept
+        else:
+            errors.append(f"presets control {c['id']!r} has no button that sets an existing control")
+            controls.remove(c)
     s["controls"] = controls
-    ids = {c["id"] for c in controls}
     for c in controls:
         for dim in ("length", "rows", "cols"):
             ref = c.get(dim)
             if isinstance(ref, str) and ref not in ids:
                 errors.append(f"control {c['id']!r}: {dim} refers to unknown control {ref!r}")
-    if len(controls) < 2:
-        errors.append(f"need at least 2 valid controls, found {len(controls)}")
+    if len(ids) < 2:
+        errors.append(f"need at least 2 valid input controls (presets buttons do not count), found {len(ids)}")
 
     # ---- explorations
     exps = [e for e in _as_list(s.get("explorations")) if isinstance(e, dict)]
@@ -253,7 +269,8 @@ def normalize_spec(spec: dict[str, Any]) -> tuple[dict[str, Any], list[str], lis
 
     s["tests"] = [t for t in _as_list(s.get("tests")) if isinstance(t, dict)]
     s["plan"] = s.get("plan") if isinstance(s.get("plan"), dict) else {}
-    s["coverage"], s["coverage_warnings"] = check_coverage(s["plan"].get("coverage"), ids, len(exps))
+    all_ids = {c["id"] for c in s["controls"]}
+    s["coverage"], s["coverage_warnings"] = check_coverage(s["plan"].get("coverage"), all_ids, len(exps))
     return s, errors, fixes
 
 
@@ -295,6 +312,16 @@ def check_coverage(coverage, control_ids: set[str], n_explorations: int) -> tupl
 
 def _normalize_control(c: dict, fixes: list[str]) -> str | None:
     t = c["type"]
+    if t == "presets":
+        opts = []
+        for o in _as_list(c.get("options")):
+            if isinstance(o, dict) and isinstance(o.get("set"), dict) and o["set"]:
+                opts.append({"label": _text(o.get("label")).strip() or "Set up", "set": o["set"]})
+        if not opts:
+            return 'presets needs options like [{"label": "...", "set": {"controlId": value}}]'
+        c["options"] = opts
+        c.pop("value", None)
+        return None
     if t in ("range", "number"):
         lo, hi = _num(c.get("min")), _num(c.get("max"))
         if t == "range" and (lo is None or hi is None):

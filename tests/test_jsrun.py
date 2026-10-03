@@ -87,6 +87,18 @@ class ExecuteTest(unittest.TestCase):
             self.assertEqual(ctx.call("PG.plain", tex), want)
         self.assertIn("σ", ctx.call("PG.text", 0, 0, r"$\sigma$"))
 
+    def test_presets_buttons(self):
+        spec = dict(SPEC, controls=CONTROLS + [
+            {"id": "quick", "type": "presets", "label": "q", "options": [{"label": "one-hot", "set": {"n": 3, "w": [2, 0, 0]}}]}])
+        rep = execute(spec, GOOD)
+        self.assertEqual(rep.problems, [])
+        self.assertTrue(rep.control_effects["quick"])
+        # a button that only sets an input the code ignores is dead
+        dead = dict(SPEC, controls=CONTROLS + [
+            {"id": "quick", "type": "presets", "label": "q", "options": [{"label": "k off", "set": {"k": False}}]}])
+        rep = execute(dead, GOOD.replace("s.k ? t : -t", "t"))
+        self.assertTrue(any("control 'quick' has no effect" in p for p in rep.problems))
+
     def test_missing_function(self):
         rep = execute(SPEC, GOOD.replace("function checks", "function checkz"))
         self.assertTrue(rep.critical)
