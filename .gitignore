@@ -13,6 +13,7 @@ out/
 out_*/
 runs/
 preview.html
+!examples/**/out/
 
 # Local tool settings
 .claude/

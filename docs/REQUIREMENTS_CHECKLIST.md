@@ -2,7 +2,7 @@
 
 Every requirement line of [hakathon_requirements.md](hakathon_requirements.md), checked against the PDF (both files are identical in content). Each line has a status and the evidence used to verify it.
 
-**Status:** ✅ done and verified · ⏳ scheduled (Phase 4) · ➖ not a requirement on our code (information about assessment)
+**Status:** ✅ done and verified · ⏳ done by the team at submission time · ➖ not a requirement on our code (information about assessment)
 
 **How it was verified (2026-10-03):**
 
@@ -36,9 +36,9 @@ Every requirement line of [hakathon_requirements.md](hakathon_requirements.md), 
 | Keep the scope to the requested concept | ✅ | Prompt: "Stay within the brief's scope", plus the coverage map of the brief's outcomes. |
 | You are explaining a mechanism, not reproducing an entire paper or training a model | ✅ | Prompt: "No training, datasets or randomness"; the code may not use `Math.random`. |
 | Full internet access, AI assistants, libraries allowed during development | ➖ | Development-time permission. |
-| Credit reused code and assets in your README | ⏳ | README "Reuse credits" section (Phase 4). |
+| Credit reused code and assets in your README | ✅ | README, "Reuse credits": libraries with licenses, the Okabe–Ito palette, the cited practice papers, design credit, AI assistance. |
 | Generic templates are allowed | ✅ | `templates/page.html`, `lib.js` and `runtime.js` contain no paper content. |
-| Paper-specific prewritten answers or generated pages are not allowed | ✅ / ⏳ | The generator uses none. The prompt's examples were made neutral in Phase 3. **Phase 4:** remove `docs/fixtures/` (generated design fixtures) from the final commit and keep only the README's required example pair. |
+| Paper-specific prewritten answers or generated pages are not allowed | ✅ | The generator uses none. The prompt's examples were made neutral in Phase 3. `docs/fixtures/` (generated design fixtures) was removed in Phase 4. The only generated page in the repo is the README's required example pair, which the agent never reads. |
 
 ## 2. What each generated explanation must contain
 
@@ -132,10 +132,10 @@ Every requirement line of [hakathon_requirements.md](hakathon_requirements.md), 
 | Include `agent.py` | ✅ | — |
 | Include `requirements.txt` | ✅ | — |
 | README with team members | ✅ | Mohammed Farhat, Mohamad Natafgi |
-| README with architecture | ⏳ | Phase 4 |
+| README with architecture | ✅ | README, "Architecture": pipeline, checks, revisions, limits, trace, repository layout |
 | README with setup | ✅ | — |
-| README with reuse credits | ⏳ | Phase 4 |
-| One example input/output pair | ⏳ | Phase 4: `examples/` (`case.json`, `out/index.html`, `out/trace.jsonl`) |
+| README with reuse credits | ✅ | README, "Reuse credits" |
+| One example input/output pair | ✅ | [`examples/attention/`](../examples/attention/): `case.json`, `out/index.html` and `out/trace.jsonl`, produced by the exact command (exit 0, 1 request, about 8.8k tokens, about 20 s) and passing `tools/check_output.py`. |
 | No separate presentation or hosted website | ➖ | — |
 
 ## 7. Assessment and ranking

@@ -4,7 +4,7 @@ For design work: no API key, no tokens. Writes preview.html (ignored by git)
 next to the saved spec, so tracked files are never modified. A page_spec.json
 is written next to index.html when the agent runs with P2P_SAVE_SPEC=1.
 
-    python tools/rerender.py docs/fixtures/attention
+    python tools/rerender.py out
 """
 
 from __future__ import annotations

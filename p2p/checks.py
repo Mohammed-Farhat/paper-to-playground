@@ -45,8 +45,9 @@ def static_code_problems(code: str) -> list[str]:
     return problems
 
 
-def run_all(spec: dict, code: str, trace, final: bool = False) -> Report:
-    stage = "final_check" if final else "check"
+def run_all(spec: dict, code: str, trace) -> Report:
+    """Run every check on one version of the spec + code; each result is logged."""
+    stage = "check"
     report = Report()
     normalized, spec_errors, _ = normalize_spec(dict(spec.get("_raw", spec)))
     trace.log(stage, "spec_structure", "pass" if not spec_errors else "fail", problems=spec_errors)
