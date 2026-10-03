@@ -9,6 +9,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
+from .jsrun import execute
 from .parse import normalize_spec
 
 REQUIRED_FUNCTIONS = ("compute", "render", "show", "checks")
@@ -54,6 +55,21 @@ def run_all(spec: dict, code: str, trace, final: bool = False) -> Report:
     report.problems += code_problems
     if any("must define" in p or "missing" in p for p in code_problems):
         report.critical = True
+
+    if not spec_errors or spec.get("controls"):
+        ex = execute(spec, code)
+        if ex.engine == "unavailable":
+            trace.log(stage, "js_execute", "skipped", reason="JavaScript engine (mini-racer) not importable")
+        else:
+            trace.log(stage, "js_execute", "pass" if not ex.problems else "fail",
+                      states_tested=ex.states_tested, live_checks_evaluated=ex.checks_seen,
+                      control_effects=ex.control_effects, critical=ex.critical, problems=ex.problems)
+            if ex.tests:
+                passed = sum(1 for t in ex.tests if t["passed"])
+                trace.log(stage, "known_answer_tests", "pass" if passed == len(ex.tests) else "fail",
+                          passed=passed, total=len(ex.tests), tests=ex.tests)
+            report.problems += [p for p in ex.problems if p not in report.problems]
+            report.critical = report.critical or ex.critical
     return report
 
 

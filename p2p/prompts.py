@@ -46,7 +46,7 @@ CONTROL types (label may contain $TeX$; optional "help"):
 {"id": "m", "type": "select", "label": "", "options": [{"value": "a", "label": ""}], "value": "a"}
 {"id": "v", "type": "vector", "label": "", "length": 3, "min": 0, "max": 1, "step": 0.05, "value": [0.2, 0.3, 0.5], "labels": ["", "", ""], "fill": 0}
 {"id": "M", "type": "matrix", "label": "", "rows": 2, "cols": 3, "min": -5, "max": 5, "step": 0.1, "value": [[1, 0, 0], [0, 1, 0]], "rowLabels": [], "colLabels": [], "fill": 0}
-"length", "rows" or "cols" may be the id of a range/number control instead of a number; the vector/matrix is then resized when that control changes (new entries = fill). Initial values and presets must respect min/max and dimensions.
+"length", "rows" or "cols" may be the id of a range/number control instead of a number; the vector/matrix is then resized when that control changes (new entries = fill). Initial values and presets must respect min/max and dimensions. Controls are independent: a control can never set or override another control, so do NOT add "preset", "mode" or "scenario" selects that replace other inputs (exploration presets already provide ready-made situations); every control must change compute() results or the SVG in every state. Select option labels are plain text.
 
 CODE: plain JavaScript; no DOM, imports, network or Math.random; display strings use Unicode, not TeX. Define exactly these top-level functions:
 - function compute(s): s maps control ids to values; return an object of numbers/arrays. Must handle every reachable state (zeros, ties, negatives, extreme values) without NaN/Infinity: define 0*log(0)=0, subtract the max before exp, guard divisions by zero.
@@ -60,7 +60,7 @@ svg: L.svg(w,h,body) L.text(x,y,str,{size,anchor:"start|middle|end",color,weight
 charts (fragments drawn inside the box x,y,w,h): L.bars({x,y,w,h,values,labels,title,yLabel,min,max,colors,color,highlight,fmt,refLines:[{value,label}]}) L.heatmap({x,y,w,h,matrix,rowLabels,colLabels,title,min,max,fmt,highlight:[[i,j]]}) L.plot({x,y,w,h,series:[{points:[[x,y]],label,color,dash,dots}],xDomain,yDomain,xLabel,yLabel,title,markers:[{x,y,label,color}],vlines:[{x,label}],hlines:[{y,label}]}); L.plotScales(same options) -> {sx,sy} pixel mappers.
 colors: L.color(i) categorical, L.heat(t in [0,1]), L.diverge(t in [-1,1]).
 
-TESTS: 2-4 known-answer tests worked out by hand from the paper's formula (special or limiting cases, including any the brief names); "path" addresses the object returned by compute().
+TESTS: 1-3 known-answer tests, each a fact stated in the brief or excerpt or a trivially exact special case of the formula (e.g. equal inputs give weights 1/n; a certain outcome gives 0; scaling by exactly 2 halves a value); "path" addresses the object returned by compute(). Never compute exponentials, logarithms or roots of non-trivial numbers by hand, and never put rounded values in a test state or expectation.
 
 TEACHING: write for the audience; define each symbol before use; go from intuition to formula to playground. Explorations are concrete and causal ("Set X to Y; watch Z; because ..."). Be concise."""
 
@@ -88,15 +88,21 @@ def user_prompt(case: dict, excerpt: str) -> str:
 REVISION_INSTRUCTIONS = """Automatic checks of your page found these problems:
 {problems}
 
-Fix ALL of them. Reply with at most two fenced blocks:
+Fix ALL of them. (If the snapshot omits prose keys, leave them out of your reply too.) Reply with at most two fenced blocks:
 - ```json with ONLY the top-level spec keys you change (complete values for those keys); omit the block if the spec needs no change.
 - ```javascript with the COMPLETE corrected code (all four functions); omit the block if the code needs no change.
 Keep everything that already works unchanged."""
 
 
-def revision_prompt(problems: list[str]) -> str:
+FULL_RETRY_INSTRUCTIONS = """Your reply could not be used:
+{problems}
+
+Reply again with the COMPLETE answer: exactly two fenced blocks, ```json (the full spec) then ```javascript (all four functions). Be concise."""
+
+
+def revision_prompt(problems: list[str], full: bool = False) -> str:
     listed = "\n".join(f"- {p}" for p in problems)
-    return REVISION_INSTRUCTIONS.format(problems=listed)
+    return (FULL_RETRY_INSTRUCTIONS if full else REVISION_INSTRUCTIONS).format(problems=listed)
 
 
 def compact_json(obj) -> str:

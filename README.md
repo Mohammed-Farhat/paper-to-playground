@@ -5,7 +5,7 @@ Agent that turns a research-paper excerpt into an interactive, self-contained HT
 ## Team members
 
 - Mohammed Farhat
-- _(teammate name)_
+- Mohamad Natafgi
 
 ## Model
 

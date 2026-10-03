@@ -13,7 +13,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from .texmath import rich_inline, rich_text, tex_to_mathml
+from .texmath import rich_inline, rich_text, tex_to_mathml, tex_to_text
 
 TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "templates"
 
@@ -105,6 +105,8 @@ def runtime_spec(spec: dict) -> dict:
         c["labelHtml"] = rich_inline(c.get("label", c["id"]))
         if c.get("help"):
             c["helpHtml"] = rich_inline(c["help"])
+        if c.get("options"):
+            c["options"] = [{**o, "label": tex_to_text(o.get("label", o.get("value")))} for o in c["options"]]
         controls.append(c)
     exps = [{"preset": e.get("preset")} for e in spec.get("explorations", [])]
     return {"controls": controls, "explorations": exps}

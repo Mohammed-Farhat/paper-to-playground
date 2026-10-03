@@ -18,7 +18,7 @@ from . import checks as checks_mod
 from .build import build_page
 from .llm import Budget, BudgetExceeded, LLMError, OpenRouterClient
 from .parse import ParseError, extract_blocks, merge_revision, normalize_spec, parse_spec
-from .prompts import SYSTEM_PROMPT, revision_prompt, user_prompt
+from .prompts import SYSTEM_PROMPT, compact_json, revision_prompt, user_prompt
 
 GENERATION_MAX_TOKENS = 16_000
 REVISION_MAX_TOKENS = 12_000
@@ -104,28 +104,45 @@ def run(case: dict, model: str, api_key: str, out_dir: Path, trace, budget: Budg
     if spec and spec.get("plan"):
         trace.log("plan_generate", "plan", "ok", plan=spec["plan"])
 
-    # Check -> revise loop. Each round sends only the problem list (plus the
-    # previous reply, which the model needs to make a targeted fix).
-    history = list(messages) + [{"role": "assistant", "content": reply.text}]
+    # Check -> revise loop. A revision request carries the original prompt, a
+    # compact snapshot of the current version and the problem list (not the
+    # whole conversation, so prompts do not grow). The best version seen is
+    # kept, because a revision can also make things worse.
+    last_text = reply.text
     revisions = 0
+    previous: set[str] | None = None
+    best: tuple | None = None  # (score, version, spec, code, problems, critical)
     while True:
         problems = list(reply_problems)
+        critical = True
         if spec:
-            problems += [p for p in checks_mod.run_all(spec, code, trace).problems if p not in problems]
+            report = checks_mod.run_all(spec, code, trace)
+            problems += [p for p in report.problems if p not in problems]
+            critical = report.critical
+            score = (int(critical), len(problems))
+            if best is None or score < best[0]:
+                best = (score, revisions, spec, code, problems, critical)
         if not problems:
             break
         if revisions >= MAX_REVISIONS:
             trace.log("revise", "stop", "max_revisions_reached", remaining_problems=problems)
             break
+        signature = {re.sub(r"[-+]?\d[\d.eE+-]*", "#", p) for p in problems}
+        if previous is not None and signature == previous:
+            trace.log("revise", "stop", "no_progress", remaining_problems=problems)
+            break
+        previous = signature
         revisions += 1
         trace.log("revise", "request", "sent", revision=revisions, problems=problems)
-        history.append({"role": "user", "content": revision_prompt(problems)})
+        snapshot = snapshot_text(spec, code, code_only_problems(problems)) if spec else last_text
+        request = list(messages) + [{"role": "assistant", "content": snapshot},
+                                    {"role": "user", "content": revision_prompt(problems, full=spec is None)}]
         try:
-            fix = client.chat(history, REVISION_MAX_TOKENS, stage="revise", purpose=f"revision {revisions}")
+            fix = client.chat(request, REVISION_MAX_TOKENS, stage="revise", purpose=f"revision {revisions}")
         except (BudgetExceeded, LLMError) as exc:
             trace.log("revise", "llm_call", "skipped", reason=str(exc))
             break
-        history.append({"role": "assistant", "content": fix.text})
+        last_text = fix.text
         if spec is None:
             spec, code, reply_problems = _parse_reply(fix.text, trace, fix.finish_reason)
             continue
@@ -142,19 +159,41 @@ def run(case: dict, model: str, api_key: str, out_dir: Path, trace, budget: Budg
         spec["_raw"] = raw_spec
         trace.log("revise", "apply", "ok", revision=revisions, changed=changed, auto_fixes=fixes)
 
-    if spec is None:
+    if best is None:
         trace.log("build", "write_page", "failed", reason="no usable spec from the model", problems=problems)
         return RunResult(ok=False, html="", problems=problems)
 
-    final = checks_mod.run_all(spec, code, trace, final=True)
+    _, version, spec, code, problems, critical = best
+    trace.log("final_check", "select_version", "ok", version=("initial" if version == 0 else f"revision {version}"),
+              critical=critical, remaining_problems=problems)
     clean = {k: v for k, v in spec.items() if k != "_raw"}
     page = build_page(clean, code, case, excerpt)
     page_report = checks_mod.check_page(page, trace)
-    remaining = reply_problems + final.problems + page_report
-    ok = not final.critical and not page_report and not reply_problems
+    remaining = problems + page_report
+    ok = not critical and not page_report
     trace.log("build", "write_page", "ok" if ok else "degraded", html_chars=len(page),
               revisions=revisions, remaining_problems=remaining)
     return RunResult(ok=ok, html=page, spec=clean, code=code, excerpt=excerpt, problems=remaining)
+
+
+CODE_KEYS = ("plan", "equations", "controls", "explorations", "tests")
+
+
+def code_only_problems(problems: list[str]) -> bool:
+    prefixes = ("known-answer test", "compute()", "render()", "show()", "checks()", "live check",
+                "control '", "only ", "the javascript", "code ")
+    return all(p.startswith(prefixes) for p in problems)
+
+
+def snapshot_text(spec: dict, code: str, code_only: bool = False) -> str:
+    """Compact re-serialisation of the current version for a revision request.
+
+    When every problem concerns code/tests, the prose keys are left out to save
+    prompt tokens (the model only needs what the code depends on)."""
+    raw = spec.get("_raw", spec)
+    if code_only:
+        raw = {k: raw[k] for k in CODE_KEYS if k in raw}
+    return "```json\n" + compact_json(raw) + "\n```\n```javascript\n" + code.strip() + "\n```"
 
 
 def _parse_reply(text: str, trace, finish_reason: str | None):

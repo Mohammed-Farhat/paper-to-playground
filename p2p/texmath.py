@@ -429,6 +429,18 @@ def _plain(text: str) -> str:
     return s
 
 
+def tex_to_text(text) -> str:
+    """Plain-text approximation of a string with $TeX$ (for <option> labels)."""
+    def conv(m: re.Match) -> str:
+        t = m.group(1) or m.group(2) or m.group(3) or m.group(4) or ""
+        t = re.sub(r"\\frac\{([^{}]*)\}\{([^{}]*)\}", r"\1/\2", t)
+        t = re.sub(r"\\sqrt\{([^{}]*)\}", r"√\1", t)
+        t = re.sub(r"\\([A-Za-z]+)", lambda c: GREEK.get(c.group(1)) or SYMBOLS.get(c.group(1))
+                   or BIG_OPS.get(c.group(1)) or c.group(1), t)
+        return t.replace("{", "").replace("}", "").replace("\\", "")
+    return _MATH_RE.sub(conv, str(text or ""))
+
+
 def rich_inline(text) -> str:
     """Single-line rich text (no paragraphs)."""
     return _inline(str(text or "").replace("\n", " "))

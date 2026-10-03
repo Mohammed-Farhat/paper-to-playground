@@ -16,6 +16,12 @@
   var state = {};
 
   function $(id) { return document.getElementById(id); }
+  /* The generated code may declare its functions with `function` or `const`;
+   * only the former become window properties, so resolve names lexically. */
+  function fn(name) {
+    try { var f = (0, eval)(name); return typeof f === 'function' ? f : null; } catch (e) { return null; }
+  }
+  var MODEL = { compute: fn('compute'), render: fn('render'), show: fn('show'), checks: fn('checks') };
   function el(tag, cls, html) {
     var e = document.createElement(tag);
     if (cls) e.className = cls;
@@ -254,17 +260,17 @@
   function update() {
     var errBox = $('p2p-error');
     if (errBox) { errBox.innerHTML = ''; errBox.hidden = true; }
-    if (typeof window.compute !== 'function') { showError('Setup', 'interactive code did not load'); return; }
+    if (!MODEL.compute) { showError('Setup', 'interactive code did not load'); return; }
     var result;
-    try { result = window.compute(L.copy(state)); } catch (e) { showError('compute', e); return; }
+    try { result = MODEL.compute(L.copy(state)); } catch (e) { showError('compute', e); return; }
     try {
       var vis = $('p2p-visual');
-      if (vis && typeof window.render === 'function') vis.innerHTML = window.render(L.copy(state), result);
+      if (vis && MODEL.render) vis.innerHTML = MODEL.render(L.copy(state), result);
     } catch (e) { showError('render', e); }
     try {
       var vals = $('p2p-values');
-      if (vals && typeof window.show === 'function') {
-        var items = window.show(L.copy(state), result) || [];
+      if (vals && MODEL.show) {
+        var items = MODEL.show(L.copy(state), result) || [];
         vals.innerHTML = items.map(function (it) {
           return '<div class="p2p-value' + (it.highlight ? ' p2p-value-hl' : '') + '"><div class="p2p-value-label">' + esc(it.label) + '</div>' +
             '<div class="p2p-value-body">' + valueHtml(it) + '</div>' + (it.note ? '<div class="p2p-value-note">' + esc(it.note) + '</div>' : '') + '</div>';
@@ -273,8 +279,8 @@
     } catch (e) { showError('values', e); }
     try {
       var chk = $('p2p-checks');
-      if (chk && typeof window.checks === 'function') {
-        var cs = window.checks(L.copy(state), result) || [];
+      if (chk && MODEL.checks) {
+        var cs = MODEL.checks(L.copy(state), result) || [];
         chk.innerHTML = cs.map(function (c) {
           return '<li class="' + (c.pass ? 'p2p-pass' : 'p2p-fail') + '"><span class="p2p-mark" aria-hidden="true">' + (c.pass ? '✓' : '✗') + '</span> ' +
             '<span class="p2p-check-name">' + esc(c.name) + '</span>' + (c.detail != null && c.detail !== '' ? ' <span class="p2p-check-detail">' + esc(c.detail) + '</span>' : '') + '</li>';
