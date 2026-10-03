@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Secrets - never commit API keys
+.env
+*.key
+
+# Generated runs (the showcase example lives in examples/)
+out/
+out_*/
+runs/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
