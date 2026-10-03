@@ -3,204 +3,334 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{TITLE}}</title>
+<title>Paper to Playground — Interactive explanation</title>
 <style>
   :root {
-    --bg: #f6f7f9;
+    color-scheme: light;
+    --bg: #f7f5f0;
     --card: #ffffff;
-    --ink: #1f2933;
-    --muted: #52606d;
-    --line: #e4e7eb;
-    --accent: #0b5cad;
-    --accent-soft: #e8f1fb;
-    --ok: #1a7f37;
-    --bad: #c62828;
-    --warn-soft: #fff6e5;
-    --warn: #b26a00;
-    --radius: 10px;
+    --ink: #202332;
+    --muted: #596173;
+    --line: #dddde4;
+    --control-line: #788195;
+    --accent: #5b3fc4;
+    --accent-dark: #432b9b;
+    --accent-soft: #eee9ff;
+    --ok: #176849;
+    --ok-soft: #eef7f2;
+    --bad: #b4233c;
+    --bad-soft: #fff0f2;
+    --warn: #815014;
+    --warn-soft: #f8efdf;
+    --radius: 18px;
+    --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
   }
   * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body {
-    margin: 0; background: var(--bg); color: var(--ink);
-    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  html { scroll-behavior: smooth; scroll-padding-top: 90px; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  [hidden] { display: none !important; }
+  a { color: var(--accent); text-underline-offset: 4px; }
+  a:hover { color: var(--accent-dark); }
+  button, input, select, summary { -webkit-tap-highlight-color: transparent; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+  .wrap { width: min(100%, 1376px); margin-inline: auto; padding-inline: 40px; }
+  .skip-link { position: absolute; left: 24px; top: 12px; z-index: 20; padding: 10px 18px; background: var(--ink); color: white; transform: translateY(-180%); }
+  .skip-link:focus { transform: translateY(0); color: white; }
+  .masthead { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-block: 24px; border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 750; letter-spacing: -.035em; }
+  .brand-mark { width: 32px; height: 32px; display: grid; place-items: center; background: var(--ink); color: white; border-radius: 9px; font: 600 17px var(--mono); letter-spacing: -3px; padding-right: 3px; }
+  .masthead-note { color: var(--muted); font-size: 13px; }
+  .hero-body { padding-block: 42px 38px; }
+  .kicker, .eyebrow { margin: 0; color: var(--accent); font-size: 11px; font-weight: 750; letter-spacing: .13em; text-transform: uppercase; }
+  h1 { max-width: 1050px; margin: 16px 0 18px; font: 500 clamp(34px, 4.3vw, 58px)/1.1 Georgia, "Times New Roman", serif; letter-spacing: -.045em; text-wrap: balance; overflow-wrap: anywhere; }
+  .hook { max-width: 810px; color: var(--muted); font-size: 18px; line-height: 1.65; margin: 0 0 24px; }
+  .hero-bottom { display: flex; align-items: center; gap: 28px; }
+  .hero-link { display: inline-flex; align-items: center; gap: 20px; flex-shrink: 0; min-height: 48px; padding: 10px 20px; border-radius: 9px; background: var(--accent); color: white; text-decoration: none; font-size: 14px; font-weight: 650; }
+  .hero-link:hover { color: white; background: var(--accent-dark); }
+  .meta { max-width: 650px; margin: 0; color: var(--muted); font-size: 13px; }
+  .toc { position: sticky; top: 0; z-index: 5; background: var(--bg); border-block: 1px solid var(--line); }
+  .toc .wrap { display: flex; flex-wrap: wrap; column-gap: 30px; }
+  .toc a { display: inline-flex; align-items: center; gap: 8px; min-height: 54px; font-size: 13px; font-weight: 600; color: var(--muted); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  .toc a span { font: 11px var(--mono); color: var(--accent); }
+  main.wrap { padding-block: 40px 48px; }
+  section.card { scroll-margin-top: 18px; margin-bottom: 26px; padding: 32px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); min-width: 0; }
+  .section-heading { display: flex; align-items: center; gap: 13px; margin-bottom: 26px; }
+  .section-index { display: grid; place-items: center; flex-shrink: 0; width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 50%; font: 12px var(--mono); color: var(--muted); }
+  h2 { margin: 0; font-size: 23px; line-height: 1.35; letter-spacing: -.035em; font-weight: 700; overflow-wrap: anywhere; }
+  h3 { font-size: 16px; line-height: 1.5; margin: 24px 0 10px; font-weight: 700; }
+  p { margin: 0 0 14px; }
+  p:last-child { margin-bottom: 0; }
+  .idea-layout { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 40px; align-items: start; }
+  .idea-copy { max-width: 72ch; }
+  .idea-copy > h3 { margin-top: 26px; }
+  .equation-panel { min-width: 0; }
+  .equations { display: grid; gap: 12px; }
+  .equation { background: #f6f4fb; border: 1px solid #e4dff2; border-radius: 12px; padding: 20px; min-width: 0; }
+  .equation math[display="block"] { display: block; overflow-x: auto; padding-block: 6px; font-size: 1.2em; margin: 0 0 12px; }
+  .equation .caption { font-size: 13px; color: var(--muted); margin: 0; }
+  math { font-size: 1.06em; }
+  .table-scroll { overflow-x: auto; }
+  table.symbols { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.symbols th, table.symbols td { padding: 13px 16px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+  table.symbols th { background: #f7f7f9; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .065em; }
+  table.symbols td.sym { width: 12%; font-size: 19px; color: var(--accent); }
+  table.symbols tr:last-child td { border-bottom: 0; }
+  /* Give the mechanism the full reading width until a side panel can fit comfortably. */
+  #p2p-playground { padding: 0; border-color: #c8bfdc; overflow: clip; }
+  .playground-heading { padding: 28px 32px; margin: 0; border-bottom: 1px solid var(--line); background: #f5f2fc; }
+  .playground-heading .section-index { background: var(--accent); color: white; border-color: var(--accent); }
+  .section-subtitle { margin-top: 4px; color: var(--muted); font-size: 14px; }
+  .pg-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; padding: 28px 32px; align-items: start; }
+  .pg-grid > *, .pg-outputs > * { min-width: 0; }
+  .pg-controls { background: #f8f8fa; border: 1px solid var(--line); border-radius: 12px; padding: 20px; min-width: 0; }
+  .panel-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+  .panel-heading h3 { margin: 0; }
+  .panel-heading .eyebrow { color: var(--muted); font-size: 10px; }
+  #p2p-controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; align-items: start; }
+  .p2p-control { min-width: 0; }
+  .p2p-control-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+  .p2p-label { font-weight: 650; font-size: 14px; }
+  .p2p-readout { color: var(--accent); font: 600 13px var(--mono); text-align: right; min-width: 3em; }
+  .p2p-range { display: block; width: 100%; min-width: 0; height: 44px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+  .p2p-num { width: 5.2em; max-width: 100%; min-height: 44px; border: 1px solid var(--control-line); border-radius: 7px; padding: 8px; background: white; color: var(--ink); font: 14px var(--mono); font-variant-numeric: tabular-nums; }
+  .p2p-control-number > .p2p-num { width: 100%; }
+  .p2p-num:hover, .p2p-select:hover { border-color: var(--accent); }
+  .p2p-num.p2p-invalid { border: 2px solid var(--bad); background: var(--bad-soft); }
+  .p2p-select { min-height: 44px; width: 100%; max-width: 100%; margin-top: 6px; padding: 8px; border: 1px solid var(--control-line); border-radius: 7px; background: white; color: var(--ink); font: inherit; font-size: 14px; }
+  .p2p-toggle { display: flex; gap: 10px; align-items: center; min-height: 44px; cursor: pointer; }
+  .p2p-toggle input { width: 20px; height: 20px; margin: 0; flex-shrink: 0; accent-color: var(--accent); }
+  .p2p-help { margin-top: 8px; color: var(--muted); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+  .p2p-vector { display: grid; gap: 5px; margin-top: 10px; }
+  .p2p-vector-item { display: grid; grid-template-columns: minmax(24px, auto) minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+  .p2p-vector-name { font: 12px var(--mono); color: var(--muted); }
+  .p2p-control-matrix { overflow-x: auto; padding: 5px 5px 10px; }
+  table.p2p-matrix-input { border-collapse: separate; border-spacing: 4px; margin: 8px 0 0; }
+  table.p2p-matrix-input th { color: var(--muted); font: 11px var(--mono); padding: 3px; }
+  table.p2p-matrix-input td { padding: 0; }
+  table.p2p-matrix-input .p2p-num { min-width: 64px; width: 64px; }
+  #p2p-reset, .p2p-try { min-height: 44px; padding: 10px 16px; font: 600 13px/1.5 system-ui, sans-serif; border-radius: 8px; cursor: pointer; }
+  #p2p-reset { width: 100%; margin-top: 20px; background: white; color: var(--ink); border: 1px solid var(--control-line); }
+  #p2p-reset:hover { background: var(--accent-soft); border-color: var(--accent); }
+  .input-notice { display: none; margin-top: 12px; font-size: 13px; color: var(--bad); }
+  .pg-controls:has(.p2p-invalid) .input-notice { display: block; }
+  .pg-visual { margin: 0; min-width: 0; }
+  .visual-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px; }
+  .visual-heading h3 { margin: 0; }
+  .live-label { color: var(--ok); font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .live-label::before { content: ''; display: inline-block; width: 6px; height: 6px; background: currentColor; border-radius: 50%; margin-right: 6px; }
+  #p2p-visual { min-width: 0; width: 100%; overflow-x: auto; background: white; border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  #p2p-visual svg { display: block; margin-inline: auto; height: auto; }
+  .pg-visual .caption { margin-top: 14px; font-size: 13px; color: var(--muted); line-height: 1.7; }
+  .scroll-hint { display: none; margin: 0 0 10px; color: var(--muted); font-size: 12px; }
+  .pg-outputs { display: grid; grid-template-columns: minmax(0, 1fr) 286px; gap: 28px; padding: 28px 32px 32px; border-top: 1px solid var(--line); background: #fcfbfe; }
+  .pg-outputs h3 { margin: 0 0 16px; }
+  #p2p-values { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 12px; }
+  .p2p-value { min-width: 0; padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: white; }
+  .p2p-value-hl { border-color: #b0a0e3; background: #f4f0ff; box-shadow: inset 0 3px 0 var(--accent); }
+  .p2p-value-label { font-size: 12px; font-weight: 650; color: var(--muted); overflow-wrap: anywhere; }
+  .p2p-value-body { overflow-x: auto; margin-top: 8px; }
+  .p2p-value-note { color: var(--muted); font-size: 12px; margin-top: 8px; overflow-wrap: anywhere; }
+  .p2p-scalar { font: 500 25px/1.35 var(--mono); overflow-wrap: anywhere; }
+  table.p2p-matrix { border-collapse: collapse; font: 12px/1.6 var(--mono); margin-top: 3px; }
+  table.p2p-matrix td { padding: 7px; border: 1px solid var(--line); text-align: right; white-space: nowrap; }
+  table.p2p-matrix th { font-size: 11px; font-weight: 400; color: var(--muted); padding: 4px 7px; }
+  #p2p-checks { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+  #p2p-checks li { padding: 12px; margin-bottom: 8px; border-radius: 9px; border: 1px solid #d4e7dd; background: var(--ok-soft); overflow-wrap: anywhere; }
+  #p2p-checks li.p2p-fail { background: var(--bad-soft); border-color: #e3abb5; }
+  .p2p-mark { font-weight: 700; }
+  .p2p-pass .p2p-mark { color: var(--ok); }
+  .p2p-fail .p2p-mark { color: var(--bad); }
+  .p2p-pass .p2p-check-name::before { content: 'Pass · '; color: var(--ok); font-weight: 700; }
+  .p2p-fail .p2p-check-name::before { content: 'Fail · '; color: var(--bad); font-weight: 700; }
+  .p2p-check-detail { display: block; margin-top: 4px; font: 11px/1.7 var(--mono); color: var(--muted); }
+  .p2p-error { margin: 0 32px 24px; padding: 16px; color: var(--bad); background: var(--bad-soft); border: 1px solid var(--bad); border-radius: 10px; font-size: 14px; }
+  .explorations { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+  .p2p-exploration { display: flex; flex-direction: column; min-width: 0; padding: 24px; background: #fcfbfe; border: 1px solid var(--line); border-radius: 12px; }
+  .p2p-exploration.p2p-active { border-color: var(--accent); box-shadow: inset 0 3px 0 var(--accent); background: #f6f3ff; }
+  .p2p-exploration.p2p-active::before { content: 'Selected exploration'; color: var(--accent); font-size: 12px; font-weight: 650; margin-bottom: 8px; }
+  .p2p-exploration h3 { margin: 0; font-size: 18px; line-height: 1.45; letter-spacing: -.02em; }
+  .p2p-exploration dl { margin: 4px 0 24px; font-size: 14px; }
+  .p2p-exploration dt { margin-top: 18px; font-size: 10px; text-transform: uppercase; letter-spacing: .12em; font-weight: 750; color: var(--accent); }
+  .p2p-exploration dd { margin: 5px 0 0; }
+  .p2p-try { align-self: flex-start; margin-top: auto; border: 1px solid var(--accent); background: var(--accent); color: white; }
+  .p2p-try:hover { background: var(--accent-dark); }
+  section.caveat { background: var(--warn-soft); border-color: #e8d6b9; }
+  .caveat .section-index { border-color: #c8ab7f; color: var(--warn); }
+  .caveat h2 { color: var(--warn); font-size: 20px; }
+  .caveat .section-heading { margin-bottom: 16px; }
+  .caveat > p { max-width: 100ch; font-size: 15px; }
+  #grounding { font-size: 14px; overflow-wrap: anywhere; }
+  .ground-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; margin-top: 24px; }
+  .ground-grid > div { border-radius: 12px; padding: 24px; border: 1px solid; }
+  .from-source { background: var(--ok-soft); border-color: #c7dfd2 !important; }
+  .ours { background: #f5f1ff; border-color: #ddd2f3 !important; }
+  .ground-grid h3 { font-size: 15px; margin: 0 0 12px; }
+  .from-source h3 { color: var(--ok); }
+  .ours h3 { color: var(--accent); }
+  .ground-grid ul { margin: 0; padding-left: 18px; }
+  .ground-grid li + li { margin-top: 8px; }
+  .disclaimer { margin-top: 22px; padding-left: 16px; border-left: 3px solid #aca1c4; color: var(--muted); }
+  details.excerpt { margin-top: 24px; border-top: 1px solid var(--line); }
+  details.excerpt summary { padding: 16px 0; min-height: 48px; cursor: pointer; color: var(--accent); font-weight: 600; }
+  details.excerpt blockquote { margin: 0; padding: 20px; background: #f8f8fa; border-left: 2px solid var(--line); white-space: pre-wrap; color: var(--muted); }
+  footer.wrap { display: flex; align-items: baseline; gap: 32px; justify-content: space-between; padding-bottom: 32px; font-size: 12px; color: var(--muted); }
+  .footer-brand { flex-shrink: 0; font-weight: 650; color: var(--ink); }
+  footer p { max-width: 700px; }
+  code { background: #efedf3; padding: 2px 5px; border-radius: 4px; font: .9em var(--mono); }
+  @media (min-width: 1280px) {
+    .pg-grid { grid-template-columns: 280px minmax(0, 1fr); }
+    #p2p-controls { grid-template-columns: minmax(0, 1fr); }
+    .pg-visual { position: sticky; top: 84px; }
   }
-  header.hero { background: var(--card); border-bottom: 1px solid var(--line); padding: 28px 16px 20px; }
-  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
-  .kicker { margin: 0; color: var(--accent); font-weight: 600; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; }
-  h1 { margin: 6px 0 8px; font-size: clamp(26px, 4vw, 36px); line-height: 1.2; }
-  .hook { margin: 0 0 10px; font-size: 18px; color: var(--muted); max-width: 820px; }
-  .meta { margin: 0; font-size: 14px; color: var(--muted); }
-  nav.toc { position: sticky; top: 0; z-index: 5; background: rgba(246,247,249,.95); border-bottom: 1px solid var(--line); }
-  nav.toc .wrap { display: flex; gap: 6px 18px; flex-wrap: wrap; padding-top: 8px; padding-bottom: 8px; font-size: 14px; }
-  nav.toc a { color: var(--muted); text-decoration: none; }
-  nav.toc a:hover { color: var(--accent); }
-  main { padding: 20px 0 40px; }
-  section.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px 24px; margin: 0 0 18px; }
-  h2 { margin: 0 0 12px; font-size: 22px; }
-  h3 { margin: 18px 0 8px; font-size: 17px; }
-  p { margin: 0 0 10px; }
-  .equations { margin: 14px 0 4px; }
-  .equation { background: var(--accent-soft); border-radius: 8px; padding: 10px 14px; margin: 0 0 10px; }
-  .equation math[display="block"] { font-size: 1.25em; margin: 4px 0; }
-  .equation .caption { font-size: 14px; color: var(--muted); margin: 4px 0 0; }
-  math { font-size: 1.08em; }
-  table.symbols { border-collapse: collapse; width: 100%; font-size: 15px; }
-  table.symbols th, table.symbols td { border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
-  table.symbols th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .03em; }
-  table.symbols td.sym { white-space: nowrap; width: 1%; font-size: 1.1em; }
-
-  /* playground */
-  .pg-grid { display: grid; grid-template-columns: minmax(250px, 340px) 1fr; gap: 20px; align-items: start; }
-  .pg-controls { background: #fafbfc; border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
-  .pg-controls h3, .pg-outputs h3 { margin-top: 0; }
-  .pg-visual { min-width: 0; }
-  #p2p-visual { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 8px; overflow-x: auto; }
-  #p2p-visual svg { display: block; margin: 0 auto; height: auto; }
-  .pg-visual .caption { font-size: 14px; color: var(--muted); margin-top: 8px; }
-  .pg-outputs { display: grid; grid-template-columns: 1fr minmax(240px, 320px); gap: 20px; margin-top: 18px; }
-  .p2p-control { margin: 0 0 14px; }
-  .p2p-control-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
-  .p2p-label { font-weight: 600; font-size: 14px; }
-  .p2p-readout { font-variant-numeric: tabular-nums; font-size: 14px; color: var(--accent); min-width: 3.5em; text-align: right; }
-  .p2p-range { width: 100%; accent-color: var(--accent); }
-  .p2p-num { width: 4.8em; padding: 3px 4px; font: inherit; font-size: 14px; border: 1px solid #cbd2d9; border-radius: 4px; }
-  .p2p-num.p2p-invalid { border-color: var(--bad); background: #fdecea; }
-  .p2p-select { font: inherit; font-size: 14px; padding: 3px 6px; margin-top: 4px; width: 100%; }
-  .p2p-toggle { display: flex; gap: 8px; align-items: center; cursor: pointer; }
-  .p2p-toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
-  .p2p-help { font-size: 13px; color: var(--muted); margin-top: 3px; }
-  .p2p-vector { display: grid; gap: 4px; margin-top: 4px; }
-  .p2p-vector-item { display: grid; grid-template-columns: minmax(2.2em, auto) 1fr auto; gap: 8px; align-items: center; font-size: 14px; }
-  .p2p-vector-name { color: var(--muted); }
-  table.p2p-matrix-input { border-collapse: collapse; margin-top: 4px; }
-  table.p2p-matrix-input th { font-weight: 500; font-size: 13px; color: var(--muted); padding: 0 4px; }
-  table.p2p-matrix-input td { padding: 2px; }
-  #p2p-reset, .p2p-try { font: inherit; font-size: 14px; border-radius: 6px; cursor: pointer; padding: 6px 12px; }
-  #p2p-reset { background: #fff; border: 1px solid #cbd2d9; color: var(--ink); }
-  .p2p-try { background: var(--accent); border: 1px solid var(--accent); color: #fff; }
-  .p2p-try:hover { filter: brightness(1.1); }
-  #p2p-values { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
-  .p2p-value { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: #fff; min-width: 0; overflow-x: auto; }
-  .p2p-value-hl { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
-  .p2p-value-label { font-size: 13px; color: var(--muted); font-weight: 600; }
-  .p2p-value-note { font-size: 12px; color: var(--muted); margin-top: 2px; }
-  .p2p-scalar { font-size: 20px; font-variant-numeric: tabular-nums; }
-  table.p2p-matrix { border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 14px; margin-top: 2px; }
-  table.p2p-matrix td { border: 1px solid var(--line); padding: 2px 7px; text-align: right; }
-  table.p2p-matrix th { font-weight: 500; color: var(--muted); font-size: 12px; padding: 1px 5px; }
-  #p2p-checks { list-style: none; margin: 0; padding: 0; font-size: 14px; }
-  #p2p-checks li { padding: 6px 8px; border-radius: 6px; margin-bottom: 6px; }
-  #p2p-checks li.p2p-pass { background: #eaf6ec; }
-  #p2p-checks li.p2p-fail { background: #fdecea; }
-  .p2p-pass .p2p-mark { color: var(--ok); font-weight: 700; }
-  .p2p-fail .p2p-mark { color: var(--bad); font-weight: 700; }
-  .p2p-check-detail { display: block; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
-  .p2p-error { background: #fdecea; color: var(--bad); border-radius: 8px; padding: 10px 12px; margin-top: 12px; font-size: 14px; }
-
-  /* explorations, caveat, grounding */
-  .explorations { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .p2p-exploration { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
-  .p2p-exploration.p2p-active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
-  .p2p-exploration h3 { margin-top: 0; }
-  .p2p-exploration dl { margin: 8px 0 12px; }
-  .p2p-exploration dt { font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: .03em; color: var(--accent); margin-top: 8px; }
-  .p2p-exploration dd { margin: 2px 0 0; }
-  section.caveat { background: var(--warn-soft); border-color: #f3d9a4; }
-  section.caveat h2 { color: var(--warn); }
-  .ground-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 10px; }
-  .ground-grid > div { border-radius: 8px; padding: 12px 14px; }
-  .from-source { background: #eaf6ec; }
-  .ours { background: #f1f0fb; }
-  .ground-grid h3 { margin-top: 0; font-size: 15px; }
-  .ground-grid ul { margin: 0; padding-left: 20px; }
-  .disclaimer { font-size: 14px; color: var(--muted); border-left: 3px solid var(--line); padding-left: 10px; margin-top: 12px; }
-  details.excerpt { margin-top: 12px; font-size: 14px; }
-  details.excerpt blockquote { margin: 8px 0 0; padding: 10px 14px; background: #fafbfc; border-left: 3px solid var(--line); white-space: pre-wrap; }
-  footer { color: var(--muted); font-size: 13px; padding: 0 0 30px; }
-  code { background: #f0f2f4; padding: 1px 4px; border-radius: 4px; font-size: .92em; }
-
-  @media (max-width: 820px) {
-    .pg-grid, .pg-outputs, .explorations, .ground-grid { grid-template-columns: 1fr; }
-    section.card { padding: 18px 16px; }
+  @media (max-width: 1000px) {
+    .wrap { padding-inline: 24px; }
+    .toc .wrap { column-gap: 20px; }
+    .idea-layout { grid-template-columns: minmax(0, 1fr); gap: 26px; }
+    .pg-outputs { grid-template-columns: minmax(0, 1fr); }
+    #p2p-checks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    #p2p-checks li { margin: 0; }
+  }
+  @media (max-width: 780px) {
+    html { scroll-padding-top: 24px; }
+    .toc { position: static; }
+    .toc .wrap { gap: 0 18px; }
+    .toc a { min-height: 44px; font-size: 12px; }
+    .hero-bottom { align-items: flex-start; flex-direction: column; gap: 16px; }
+    .masthead-note { display: none; }
+    #p2p-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .explorations, .ground-grid { grid-template-columns: minmax(0, 1fr); }
+    #p2p-visual svg.p2p-svg { min-width: 680px; }
+    .scroll-hint { display: block; }
+    footer.wrap { flex-direction: column; gap: 10px; }
+  }
+  @media (max-width: 560px) {
+    .wrap { padding-inline: 16px; }
+    .masthead { padding-block: 18px; }
+    .hero-body { padding-block: 28px; }
+    h1 { font-size: 36px; }
+    .hook { font-size: 16px; }
+    main.wrap { padding-block: 24px; }
+    section.card { padding: 20px 16px; margin-bottom: 18px; border-radius: 14px; }
+    .section-heading { gap: 10px; margin-bottom: 20px; }
+    h2 { font-size: 21px; }
+    .section-index { width: 30px; height: 30px; }
+    .playground-heading { padding: 20px 16px; }
+    .pg-grid, .pg-outputs { padding: 20px 16px; gap: 24px; }
+    #p2p-controls { grid-template-columns: minmax(0, 1fr); }
+    .pg-controls { padding: 16px; }
+    .equation, .p2p-exploration, .ground-grid > div { padding: 18px; }
+    .equation math[display="block"] { font-size: 1.05em; }
+    table.symbols { font-size: 13px; }
+    table.symbols th, table.symbols td { padding: 10px 8px; }
+    table.symbols th { font-size: 10px; }
+    table.symbols td.sym { font-size: 16px; }
+    #p2p-checks { grid-template-columns: minmax(0, 1fr); }
+    #p2p-values { grid-template-columns: minmax(0, 1fr); }
+    .p2p-error { margin-inline: 16px; }
+    .visual-heading { align-items: flex-start; flex-direction: column; gap: 4px; }
+    #p2p-visual { padding: 8px; }
+    .p2p-try { width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    body { background: white; font-size: 11pt; }
+    .wrap { width: 100%; padding-inline: 0; }
+    .toc, .skip-link, .hero-link, #p2p-reset, .p2p-try { display: none; }
+    .pg-visual { position: static; }
+    .pg-grid, .pg-outputs, .idea-layout { grid-template-columns: minmax(0, 1fr); }
+    section.card { border: 0; padding: 16px 0; }
+    #p2p-playground { overflow: visible; }
+    #p2p-visual { overflow: visible; }
+    #p2p-visual svg.p2p-svg { min-width: 0; max-width: 100% !important; }
+    .scroll-hint { display: none; }
   }
 </style>
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to explanation</a>
 <header class="hero">
   <div class="wrap">
-    <p class="kicker">Interactive explanation</p>
-    <h1>{{TITLE}}</h1>
-    <p class="hook">{{HOOK}}</p>
-    <p class="meta">{{META}}</p>
+    <div class="masthead">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">[·]</span>Paper to Playground</div>
+      <span class="masthead-note">Read the idea. Make it click.</span>
+    </div>
+    <div class="hero-body">
+      <p class="kicker">The interactive research notebook</p>
+      <h1>{{TITLE}}</h1>
+      <p class="hook">{{HOOK}}</p>
+      <div class="hero-bottom">
+        <a class="hero-link" href="#p2p-playground">Open the playground <span aria-hidden="true">↗</span></a>
+        <p class="meta">{{META}}</p>
+      </div>
+    </div>
   </div>
 </header>
 <nav class="toc" aria-label="Sections">
   <div class="wrap">
-    <a href="#idea">1. The idea</a>
-    <a href="#symbols">2. Symbols</a>
-    <a href="#p2p-playground">3. Playground</a>
-    <a href="#explore">4. Guided explorations</a>
-    <a href="#caveat">5. Caveat</a>
-    <a href="#grounding">6. Source grounding</a>
+    <a href="#idea"><span>01</span> The idea</a>
+    <a href="#symbols"><span>02</span> Symbols</a>
+    <a href="#p2p-playground"><span>03</span> Playground</a>
+    <a href="#explore"><span>04</span> Explorations</a>
+    <a href="#caveat"><span>05</span> Keep in mind</a>
+    <a href="#grounding"><span>06</span> The source</a>
   </div>
 </nav>
-<main class="wrap">
-  <section id="idea" class="card">
-    <h2>1. The idea</h2>
-    {{IDEA}}
-    <h3>Why it matters</h3>
-    {{WHY}}
-    {{EQUATIONS}}
+<main id="main" class="wrap" tabindex="-1">
+  <section id="idea" class="card" aria-labelledby="idea-title">
+    <div class="section-heading"><span class="section-index" aria-hidden="true">01</span><h2 id="idea-title">The idea</h2></div>
+    <div class="idea-layout">
+      <div class="idea-copy">
+        {{IDEA}}
+        <h3>Why it matters</h3>
+        {{WHY}}
+      </div>
+      <div class="equation-panel">{{EQUATIONS}}</div>
+    </div>
   </section>
-
-  <section id="symbols" class="card">
-    <h2>2. What the symbols mean</h2>
-    {{SYMBOLS}}
+  <section id="symbols" class="card" aria-labelledby="symbols-title">
+    <div class="section-heading"><span class="section-index" aria-hidden="true">02</span><h2 id="symbols-title">A quick guide to the symbols</h2></div>
+    <div class="table-scroll" role="region" aria-label="Symbol definitions" tabindex="0">{{SYMBOLS}}</div>
   </section>
-
-  <section id="p2p-playground" class="card">
-    <h2>3. Playground</h2>
+  <section id="p2p-playground" class="card" aria-labelledby="playground-title">
+    <div class="section-heading playground-heading">
+      <span class="section-index" aria-hidden="true">03</span>
+      <div><h2 id="playground-title">Make the idea move.</h2><p class="section-subtitle">Change an input. Follow the calculation. See what changes.</p></div>
+    </div>
     <div class="pg-grid">
       <div class="pg-controls">
-        <h3>Controls</h3>
+        <div class="panel-heading"><h3>Your inputs</h3><span class="eyebrow">Adjust &amp; observe</span></div>
         <div id="p2p-controls"></div>
-        <button type="button" id="p2p-reset">Reset to defaults</button>
+        <p class="input-notice" role="status">Check the highlighted input. The result still uses the last valid value.</p>
+        <button type="button" id="p2p-reset">↺ Reset to defaults</button>
       </div>
-      <div class="pg-visual">
-        <div id="p2p-visual" aria-live="polite"></div>
-        <p class="caption">{{VISUAL_CAPTION}}</p>
-      </div>
+      <figure class="pg-visual">
+        <div class="visual-heading"><h3>See the mechanism</h3><span class="live-label">Computed from your inputs</span></div>
+        <p id="visual-scroll-hint" class="scroll-hint">Scroll the diagram sideways to see every label. Values are also listed below.</p>
+        <div id="p2p-visual" role="region" aria-label="Interactive mechanism diagram" aria-describedby="visual-caption visual-scroll-hint" aria-live="polite" tabindex="0"></div>
+        <figcaption id="visual-caption" class="caption">{{VISUAL_CAPTION}}</figcaption>
+      </figure>
     </div>
     <div id="p2p-error" class="p2p-error" role="alert" hidden></div>
     <div class="pg-outputs">
-      <div>
-        <h3>Intermediate values (computed live)</h3>
-        <div id="p2p-values"></div>
-      </div>
-      <div>
-        <h3>Live checks</h3>
-        <ul id="p2p-checks"></ul>
-      </div>
+      <div><h3>Inside the calculation</h3><div id="p2p-values"></div></div>
+      <div><h3>Live checks</h3><ul id="p2p-checks"></ul></div>
     </div>
   </section>
-
-  <section id="explore" class="card">
-    <h2>4. Guided explorations</h2>
+  <section id="explore" class="card" aria-labelledby="explore-title">
+    <div class="section-heading"><span class="section-index" aria-hidden="true">04</span><h2 id="explore-title">Two ways to build your intuition</h2></div>
     <div class="explorations">{{EXPLORATIONS}}</div>
   </section>
-
-  <section id="caveat" class="card caveat">
-    <h2>5. {{PITFALL_HEADING}}</h2>
+  <section id="caveat" class="card caveat" aria-labelledby="caveat-title">
+    <div class="section-heading"><span class="section-index" aria-hidden="true">05</span><h2 id="caveat-title">{{PITFALL_HEADING}}</h2></div>
     {{PITFALL_TEXT}}
   </section>
-
-  <section id="grounding" class="card">
-    <h2>6. Source grounding</h2>
+  <section id="grounding" class="card" aria-labelledby="grounding-title">
+    <div class="section-heading"><span class="section-index" aria-hidden="true">06</span><h2 id="grounding-title">Back to the paper</h2></div>
     {{GROUNDING}}
   </section>
 </main>
-<footer class="wrap">{{FOOTER}}</footer>
+<footer class="wrap"><span class="footer-brand">Paper to Playground</span><p>{{FOOTER}}</p></footer>
 <script id="p2p-spec" type="application/json">{{SPEC_JSON}}</script>
 <script>
 {{LIB_JS}}
